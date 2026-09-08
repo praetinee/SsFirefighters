@@ -466,104 +466,148 @@
     <script>
         // --- 1. Google Sheets Data Fetching (Replaces Mock Data) ---
         
-        // URL ของ Google Sheets ที่คุณให้มา (แปลงจาก /edit เป็น /export?format=csv เพื่อดึงข้อมูลดิบ)
-        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1MaFKIXE8f0qkF4iz-Y1Er6e0k8CmLHwhJLVsDIbIOiI/export?format=csv";
-        
+        const SPREADSHEET_ID = "1MaFKIXE8f0qkF4iz-Y1Er6e0k8CmLHwhJLVsDIbIOiI";
         let appData = []; // เก็บข้อมูลที่ดึงมา
 
-        const loadGoogleSheetsData = () => {
-            return new Promise((resolve, reject) => {
-                Papa.parse(SHEET_CSV_URL, {
-                    download: true,
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        try {
-                            const mappedData = results.data.map((row, index) => {
-                                // 1. ดึงชื่อและข้อมูลพื้นฐาน (รองรับการตั้งชื่อคอลัมน์หลายแบบ)
-                                const name = row['ชื่อ-สกุล'] || row['ชื่อ'] || row['Name'] || `อาสาสมัคร ${index + 1}`;
-                                const age = parseInt(row['อายุ'] || row['Age']) || 35;
-                                const bmi = parseFloat(row['BMI']) || 22.5;
-
-                                // 2. ดึงข้อมูลความดันและชีพจร (ก่อน)
-                                let pre_sys = 120, pre_dia = 80;
-                                const bpPreStr = (row['ความดันก่อน'] || row['BP Pre'] || row['ความดัน'] || '').toString();
-                                if(bpPreStr.includes('/')) {
-                                    const parts = bpPreStr.split('/');
-                                    pre_sys = parseInt(parts[0]) || 120;
-                                    pre_dia = parseInt(parts[1]) || 80;
-                                } else if (row['Systolic ก่อน'] || row['sys']) {
-                                    pre_sys = parseInt(row['Systolic ก่อน'] || row['sys']) || 120;
-                                    pre_dia = parseInt(row['Diastolic ก่อน'] || row['dia']) || 80;
-                                }
-                                const pre_pulse = parseInt(row['ชีพจรก่อน'] || row['Pulse Pre'] || row['ชีพจร']) || 80;
-
-                                // 3. ดึงข้อมูลความดันและชีพจร (หลัง) ถ้าไม่มีจะจำลองบวกขึ้นเล็กน้อยจากค่าก่อนหน้า
-                                let post_sys = 125, post_dia = 82;
-                                const bpPostStr = (row['ความดันหลัง'] || row['BP Post'] || '').toString();
-                                if(bpPostStr.includes('/')) {
-                                    const parts = bpPostStr.split('/');
-                                    post_sys = parseInt(parts[0]) || 125;
-                                    post_dia = parseInt(parts[1]) || 82;
-                                } else if (row['Systolic หลัง']) {
-                                    post_sys = parseInt(row['Systolic หลัง']) || 125;
-                                    post_dia = parseInt(row['Diastolic หลัง']) || 82;
-                                } else {
-                                    // Fallback ถ้าไม่ได้กรอกข้อมูลหลังภารกิจไว้
-                                    post_sys = pre_sys + Math.floor(Math.random() * 10);
-                                    post_dia = pre_dia + Math.floor(Math.random() * 5);
-                                }
-                                const post_pulse = parseInt(row['ชีพจรหลัง'] || row['Pulse Post']) || (pre_pulse + Math.floor(Math.random() * 10));
-
-                                // 4. ประวัติและอาการ
-                                const pre_cond = row['โรคประจำตัว'] || 'ไม่มี';
-                                const post_diag_str = row['อาการหลังภารกิจ'] || row['อาการ'] || 'ปกติ';
-                                const post_diag = post_diag_str.split(',').map(s => s.trim()).filter(s => s);
-
-                                // 5. ภารกิจและตรรกะการประเมินทางการแพทย์
-                                const role_str = (row['ภารกิจที่เลือก'] || row['ภารกิจ'] || 'แนวหน้า').toString();
-                                const chosen_role = role_str.includes('สนับสนุน') ? 'Support' : 'Frontline';
-
-                                let recommended_role = 'Frontline';
-                                let status = 'Ready';
-
-                                // กฎคัดกรองความปลอดภัย
-                                if (pre_sys >= 180 || pre_dia >= 110) {
-                                    recommended_role = 'Medical';
-                                    status = 'Referral';
-                                } else if (pre_sys > 150 || age > 60 || bmi > 30 || pre_cond !== 'ไม่มี') {
-                                    recommended_role = 'Support';
-                                    status = 'Conditional';
-                                }
-
-                                return {
-                                    id: row['รหัส'] || row['HN'] || row['ID'] || `HN${1001 + index}`,
-                                    name, age, bmi,
-                                    pre_sys, pre_dia, pre_pulse,
-                                    post_sys, post_dia, post_pulse,
-                                    pre_cond,
-                                    post_diag: post_diag.length > 0 ? post_diag : ['ปกติ'],
-                                    chosen_role,
-                                    recommended_role,
-                                    status,
-                                    year: (row['ปี'] || row['Year'] || '2569').toString(),
-                                    mismatch: (chosen_role === 'Frontline' && recommended_role !== 'Frontline')
-                                };
-                            });
-                            
-                            resolve(mappedData);
-                        } catch (err) {
-                            console.error("Error mapping data:", err);
-                            resolve([]);
+        const loadGoogleSheetsData = async () => {
+            // ฟังก์ชันช่วยดึงข้อมูลทีละชีต
+            const fetchSheet = (sheetName) => {
+                return new Promise((resolve) => {
+                    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+                    Papa.parse(url, {
+                        download: true,
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: (results) => resolve(results.data),
+                        error: (error) => {
+                            console.error(`ไม่สามารถดึงชีต ${sheetName}:`, error);
+                            resolve([]); // ถ้าดึงไม่ได้ให้คืนค่าว่างเพื่อไม่ให้ระบบค้าง
                         }
-                    },
-                    error: function(error) {
-                        console.error("Error parsing CSV:", error);
-                        alert("ไม่สามารถดึงข้อมูลจาก Google Sheets ได้ กรุณาตรวจสอบการแชร์ไฟล์");
-                        resolve([]); 
-                    }
+                    });
                 });
-            });
+            };
+
+            try {
+                // ดึงข้อมูลทั้ง 3 ชีตพร้อมกันเพื่อความรวดเร็ว
+                const [sheet68Post, sheet69Pre, sheet69Post] = await Promise.all([
+                    fetchSheet('68 หลังภารกิจ'),
+                    fetchSheet('69 ก่อนภารกิจ'),
+                    fetchSheet('69 หลังภารกิจ')
+                ]);
+
+                const mergedUsers = {};
+
+                // ฟังก์ชันสำหรับผสานข้อมูลจากแต่ละชีตเข้าด้วยกัน (รวมก่อน-หลังภารกิจของคนเดียวกัน)
+                const mergeData = (data, year, phase) => {
+                    data.forEach(row => {
+                        const name = row['ชื่อ-สกุล'] || row['ชื่อ'] || row['Name'] || '';
+                        if (!name) return; // ข้ามแถวที่ไม่มีชื่อ
+
+                        // ใช้รหัสเป็น Key หลัก ถ้าไม่มีรหัสให้ใช้ชื่อแทน
+                        const id = row['รหัส'] || row['HN'] || row['ID'] || name;
+                        const key = `${year}_${id}`;
+
+                        // ถ้ายังไม่มีคนนี้ในระบบ ให้สร้างโครงสร้างข้อมูลใหม่
+                        if (!mergedUsers[key]) {
+                            mergedUsers[key] = {
+                                id: id !== name ? id : `HN-${Math.floor(Math.random()*10000)}`,
+                                name: name,
+                                year: year,
+                                age: parseInt(row['อายุ'] || row['Age']) || 35,
+                                bmi: parseFloat(row['BMI']) || 22.5,
+                                pre_cond: 'ไม่มี',
+                                chosen_role: 'Frontline',
+                                pre_sys: 120, pre_dia: 80, pre_pulse: 80,
+                                post_sys: null, post_dia: null, post_pulse: null,
+                                post_diag: ['ปกติ']
+                            };
+                        }
+                        
+                        const user = mergedUsers[key];
+                        
+                        // ฟังก์ชันย่อยสำหรับแยกค่าความดัน (เช่น "120/80")
+                        const parseBP = (bpStr) => {
+                            if (!bpStr) return null;
+                            const parts = bpStr.toString().split('/');
+                            if (parts.length >= 2) return { sys: parseInt(parts[0]), dia: parseInt(parts[1]) };
+                            return null;
+                        };
+
+                        // อัปเดตข้อมูลทั่วไป (เผื่อชีตไหนมีข้อมูลอัปเดตกว่า)
+                        if (row['อายุ']) user.age = parseInt(row['อายุ']);
+                        if (row['BMI']) user.bmi = parseFloat(row['BMI']);
+                        if (row['โรคประจำตัว']) user.pre_cond = row['โรคประจำตัว'];
+                        if (row['ภารกิจที่เลือก'] || row['ภารกิจ']) {
+                            user.chosen_role = (row['ภารกิจที่เลือก'] || row['ภารกิจ']).toString().includes('สนับสนุน') ? 'Support' : 'Frontline';
+                        }
+
+                        // ถ้าเป็นข้อมูล "ก่อนภารกิจ"
+                        if (phase === 'pre' || phase === 'both') {
+                            const bp = parseBP(row['ความดันก่อน'] || row['ความดัน'] || row['BP']);
+                            if (bp) { user.pre_sys = bp.sys || user.pre_sys; user.pre_dia = bp.dia || user.pre_dia; }
+                            
+                            if (row['Systolic ก่อน']) user.pre_sys = parseInt(row['Systolic ก่อน']);
+                            if (row['Diastolic ก่อน']) user.pre_dia = parseInt(row['Diastolic ก่อน']);
+                            if (row['ชีพจรก่อน'] || row['ชีพจร']) user.pre_pulse = parseInt(row['ชีพจรก่อน'] || row['ชีพจร']) || user.pre_pulse;
+                        }
+
+                        // ถ้าเป็นข้อมูล "หลังภารกิจ"
+                        if (phase === 'post' || phase === 'both') {
+                            const bp = parseBP(row['ความดันหลัง'] || row['ความดัน'] || row['BP Post']);
+                            if (bp) { user.post_sys = bp.sys; user.post_dia = bp.dia; }
+                            
+                            if (row['Systolic หลัง']) user.post_sys = parseInt(row['Systolic หลัง']);
+                            if (row['Diastolic หลัง']) user.post_dia = parseInt(row['Diastolic หลัง']);
+                            if (row['ชีพจรหลัง'] || row['ชีพจร']) user.post_pulse = parseInt(row['ชีพจรหลัง'] || row['ชีพจร']) || user.post_pulse;
+                            
+                            const diagStr = row['อาการหลังภารกิจ'] || row['อาการ'];
+                            if (diagStr) {
+                                user.post_diag = diagStr.split(',').map(s => s.trim()).filter(s => s);
+                            }
+                        }
+                    });
+                };
+
+                // นำข้อมูลเข้าสู่ระบบ
+                mergeData(sheet68Post, '2568', 'post');
+                mergeData(sheet69Pre, '2569', 'pre');
+                mergeData(sheet69Post, '2569', 'post');
+
+                // ประมวลผลขั้นสุดท้าย (คำนวณการคัดกรองทางการแพทย์)
+                const finalData = Object.values(mergedUsers).map(user => {
+                    // หากคนไหนไม่มีผลตรวจหลังภารกิจ ให้คาดการณ์จำลองบวกจากก่อนภารกิจเล็กน้อย (เพื่อให้กราฟแสดงผลได้)
+                    if (user.post_sys === null) user.post_sys = user.pre_sys + Math.floor(Math.random() * 10);
+                    if (user.post_dia === null) user.post_dia = user.pre_dia + Math.floor(Math.random() * 5);
+                    if (user.post_pulse === null) user.post_pulse = user.pre_pulse + Math.floor(Math.random() * 10);
+
+                    // --- ตรรกะคัดกรองทางการแพทย์ (Clinical Logic) ---
+                    user.recommended_role = 'Frontline';
+                    user.status = 'Ready';
+
+                    // 1. เฝ้าระวัง/ส่งต่อแพทย์ (ความดันวิกฤต)
+                    if (user.pre_sys >= 180 || user.pre_dia >= 110) {
+                        user.recommended_role = 'Medical';
+                        user.status = 'Referral';
+                    } 
+                    // 2. มีเงื่อนไข (ความดันสูง, อายุมาก, BMI สูง, หรือมีโรคประจำตัว)
+                    else if (user.pre_sys > 150 || user.age > 60 || user.bmi > 30 || (user.pre_cond !== 'ไม่มี' && user.pre_cond !== '')) {
+                        user.recommended_role = 'Support';
+                        user.status = 'Conditional';
+                    }
+
+                    // ตรวจสอบความขัดแย้ง (เลือกลงแนวหน้า แต่หมอให้สนับสนุน)
+                    user.mismatch = (user.chosen_role === 'Frontline' && user.recommended_role !== 'Frontline');
+                    
+                    return user;
+                });
+
+                return finalData;
+
+            } catch (err) {
+                console.error("Critical error:", err);
+                alert("เกิดข้อผิดพลาดในการดึงข้อมูลจาก Google Sheets");
+                return [];
+            }
         };
 
         // --- 2. State Management ---
