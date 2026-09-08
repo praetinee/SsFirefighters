@@ -464,13 +464,20 @@
     </div>
 
     <script>
-        // --- 1. Google Sheets Data Fetching (Replaces Mock Data) ---
-        
-        const SPREADSHEET_ID = "1MaFKIXE8f0qkF4iz-Y1Er6e0k8CmLHwhJLVsDIbIOiI";
-        let appData = []; // เก็บข้อมูลที่ดึงมา
+        //        const SPREADSHEET_ID = "1MaFKIXE8f0qkF4iz-Y1Er6e0k8CmLHwhJLVsDIbIOiI";
+        let appData = []; 
 
-        const loadGoogleSheetsData = async () => {
-            // ฟังก์ชันช่วยดึงข้อมูลทีละชีต
+        const state = {
+            view: 'commander', 
+            year: 'all',
+            phase: 'all', 
+            search: '',
+            filterRole: 'all',
+            filterStatus: 'all',
+            charts: {}
+        };
+
+        //        const loadGoogleSheetsData = async () => {
             const fetchSheet = (sheetName) => {
                 return new Promise((resolve) => {
                     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
@@ -481,14 +488,14 @@
                         complete: (results) => resolve(results.data),
                         error: (error) => {
                             console.error(`ไม่สามารถดึงชีต ${sheetName}:`, error);
-                            resolve([]); // ถ้าดึงไม่ได้ให้คืนค่าว่างเพื่อไม่ให้ระบบค้าง
+                            resolve([]); 
                         }
                     });
                 });
             };
 
             try {
-                // ดึงข้อมูลทั้ง 3 ชีตพร้อมกันเพื่อความรวดเร็ว
+                // ดึงข้อมูล 3 ชีตตามที่ระบุ
                 const [sheet68Post, sheet69Pre, sheet69Post] = await Promise.all([
                     fetchSheet('68 หลังภารกิจ'),
                     fetchSheet('69 ก่อนภารกิจ'),
@@ -497,106 +504,125 @@
 
                 const mergedUsers = {};
 
-                // ฟังก์ชันสำหรับผสานข้อมูลจากแต่ละชีตเข้าด้วยกัน (รวมก่อน-หลังภารกิจของคนเดียวกัน)
                 const mergeData = (data, year, phase) => {
+                    if (!data || data.length === 0) return;
+                    
                     data.forEach(row => {
-                        const name = row['ชื่อ-สกุล'] || row['ชื่อ'] || row['Name'] || '';
-                        if (!name) return; // ข้ามแถวที่ไม่มีชื่อ
+                        // Helper ฟังก์ชันค้นหาชื่อคอลัมน์แบบยืดหยุ่น
+                        const getVal = (keys) => {
+                            for(let k of keys) {
+                                const exact = Object.keys(row).find(key => key.trim() === k);
+                                if(exact && row[exact] !== undefined && row[exact] !== '') return row[exact];
+                            }
+                            return null;
+                        };
 
-                        // ใช้รหัสเป็น Key หลัก ถ้าไม่มีรหัสให้ใช้ชื่อแทน
-                        const id = row['รหัส'] || row['HN'] || row['ID'] || name;
+                        const name = getVal(['ชื่อ-สกุล', 'ชื่อ', 'ชื่อ สกุล', 'Name']);
+                        if (!name) return; // ข้ามบรรทัดที่ไม่มีชื่อ
+
+                        const rawId = getVal(['รหัส', 'HN', 'ID']);
+                        const id = rawId || name; // ถ้ารหัสไม่มี ให้ใช้ชื่อเป็นคีย์สำรอง
                         const key = `${year}_${id}`;
 
-                        // ถ้ายังไม่มีคนนี้ในระบบ ให้สร้างโครงสร้างข้อมูลใหม่
                         if (!mergedUsers[key]) {
+                            // ค่าเริ่มต้นเป็น null ทั้งหมด เพื่อไม่เมคข้อมูลเอง
                             mergedUsers[key] = {
-                                id: id !== name ? id : `HN-${Math.floor(Math.random()*10000)}`,
+                                id: id,
                                 name: name,
                                 year: year,
-                                age: parseInt(row['อายุ'] || row['Age']) || 35,
-                                bmi: parseFloat(row['BMI']) || 22.5,
-                                pre_cond: 'ไม่มี',
+                                age: null,
+                                bmi: null,
+                                pre_cond: null,
                                 chosen_role: 'Frontline',
-                                pre_sys: 120, pre_dia: 80, pre_pulse: 80,
+                                pre_sys: null, pre_dia: null, pre_pulse: null,
                                 post_sys: null, post_dia: null, post_pulse: null,
-                                post_diag: ['ปกติ']
+                                post_diag: []
                             };
                         }
                         
                         const user = mergedUsers[key];
                         
-                        // ฟังก์ชันย่อยสำหรับแยกค่าความดัน (เช่น "120/80")
+                        const ageVal = getVal(['อายุ', 'Age']);
+                        if (ageVal) user.age = parseInt(ageVal) || user.age;
+
+                        const bmiVal = getVal(['BMI', 'ดัชนีมวลกาย']);
+                        if (bmiVal) user.bmi = parseFloat(bmiVal) || user.bmi;
+
+                        const condVal = getVal(['โรคประจำตัว', 'ประวัติโรค']);
+                        if (condVal) user.pre_cond = condVal;
+
+                        const roleVal = getVal(['ภารกิจที่เลือก', 'ภารกิจ', 'Role']);
+                        if (roleVal) user.chosen_role = roleVal.toString().includes('สนับสนุน') ? 'Support' : 'Frontline';
+
                         const parseBP = (bpStr) => {
                             if (!bpStr) return null;
-                            const parts = bpStr.toString().split('/');
+                            const parts = bpStr.toString().split(/[\/\\\-]/);
                             if (parts.length >= 2) return { sys: parseInt(parts[0]), dia: parseInt(parts[1]) };
                             return null;
                         };
 
-                        // อัปเดตข้อมูลทั่วไป (เผื่อชีตไหนมีข้อมูลอัปเดตกว่า)
-                        if (row['อายุ']) user.age = parseInt(row['อายุ']);
-                        if (row['BMI']) user.bmi = parseFloat(row['BMI']);
-                        if (row['โรคประจำตัว']) user.pre_cond = row['โรคประจำตัว'];
-                        if (row['ภารกิจที่เลือก'] || row['ภารกิจ']) {
-                            user.chosen_role = (row['ภารกิจที่เลือก'] || row['ภารกิจ']).toString().includes('สนับสนุน') ? 'Support' : 'Frontline';
-                        }
+                        // ค้นหาคอลัมน์ความดัน
+                        let bpPreStr = getVal(['ความดันก่อน', 'BP Pre']);
+                        let bpPostStr = getVal(['ความดันหลัง', 'BP Post']);
+                        let genericBpStr = getVal(['ความดัน', 'BP', 'ความดันโลหิต']);
+                        
+                        if (phase === 'pre' && genericBpStr && !bpPreStr) bpPreStr = genericBpStr;
+                        if (phase === 'post' && genericBpStr && !bpPostStr) bpPostStr = genericBpStr;
 
-                        // ถ้าเป็นข้อมูล "ก่อนภารกิจ"
-                        if (phase === 'pre' || phase === 'both') {
-                            const bp = parseBP(row['ความดันก่อน'] || row['ความดัน'] || row['BP']);
-                            if (bp) { user.pre_sys = bp.sys || user.pre_sys; user.pre_dia = bp.dia || user.pre_dia; }
-                            
-                            if (row['Systolic ก่อน']) user.pre_sys = parseInt(row['Systolic ก่อน']);
-                            if (row['Diastolic ก่อน']) user.pre_dia = parseInt(row['Diastolic ก่อน']);
-                            if (row['ชีพจรก่อน'] || row['ชีพจร']) user.pre_pulse = parseInt(row['ชีพจรก่อน'] || row['ชีพจร']) || user.pre_pulse;
+                        if (bpPreStr) {
+                            const bp = parseBP(bpPreStr);
+                            if (bp) { user.pre_sys = bp.sys; user.pre_dia = bp.dia; }
                         }
-
-                        // ถ้าเป็นข้อมูล "หลังภารกิจ"
-                        if (phase === 'post' || phase === 'both') {
-                            const bp = parseBP(row['ความดันหลัง'] || row['ความดัน'] || row['BP Post']);
+                        if (bpPostStr) {
+                            const bp = parseBP(bpPostStr);
                             if (bp) { user.post_sys = bp.sys; user.post_dia = bp.dia; }
-                            
-                            if (row['Systolic หลัง']) user.post_sys = parseInt(row['Systolic หลัง']);
-                            if (row['Diastolic หลัง']) user.post_dia = parseInt(row['Diastolic หลัง']);
-                            if (row['ชีพจรหลัง'] || row['ชีพจร']) user.post_pulse = parseInt(row['ชีพจรหลัง'] || row['ชีพจร']) || user.post_pulse;
-                            
-                            const diagStr = row['อาการหลังภารกิจ'] || row['อาการ'];
-                            if (diagStr) {
-                                user.post_diag = diagStr.split(',').map(s => s.trim()).filter(s => s);
-                            }
+                        }
+
+                        // ค้นหาคอลัมน์ชีพจร
+                        let pulsePreStr = getVal(['ชีพจรก่อน', 'Pulse Pre']);
+                        let pulsePostStr = getVal(['ชีพจรหลัง', 'Pulse Post']);
+                        let genericPulseStr = getVal(['ชีพจร', 'Pulse', 'อัตราการเต้นหัวใจ']);
+
+                        if (phase === 'pre' && genericPulseStr && !pulsePreStr) pulsePreStr = genericPulseStr;
+                        if (phase === 'post' && genericPulseStr && !pulsePostStr) pulsePostStr = genericPulseStr;
+
+                        if (pulsePreStr) user.pre_pulse = parseInt(pulsePreStr) || user.pre_pulse;
+                        if (pulsePostStr) user.post_pulse = parseInt(pulsePostStr) || user.post_pulse;
+
+                        // อาการ
+                        const diagStr = getVal(['อาการหลังภารกิจ', 'อาการ', 'Symptoms']);
+                        if (diagStr) {
+                            const diags = diagStr.split(',').map(s => s.trim()).filter(s => s && s !== '-' && s !== 'ปกติ' && s !== 'ไม่มี');
+                            user.post_diag = [...new Set([...user.post_diag, ...diags])]; // ตัดตัวซ้ำ
                         }
                     });
                 };
 
-                // นำข้อมูลเข้าสู่ระบบ
+                // รวมข้อมูลตามชีต (ข้อมูลใครมีแค่ไหน ก็อยู่แค่นั้น)
                 mergeData(sheet68Post, '2568', 'post');
                 mergeData(sheet69Pre, '2569', 'pre');
                 mergeData(sheet69Post, '2569', 'post');
 
-                // ประมวลผลขั้นสุดท้าย (คำนวณการคัดกรองทางการแพทย์)
                 const finalData = Object.values(mergedUsers).map(user => {
-                    // หากคนไหนไม่มีผลตรวจหลังภารกิจ ให้คาดการณ์จำลองบวกจากก่อนภารกิจเล็กน้อย (เพื่อให้กราฟแสดงผลได้)
-                    if (user.post_sys === null) user.post_sys = user.pre_sys + Math.floor(Math.random() * 10);
-                    if (user.post_dia === null) user.post_dia = user.pre_dia + Math.floor(Math.random() * 5);
-                    if (user.post_pulse === null) user.post_pulse = user.pre_pulse + Math.floor(Math.random() * 10);
-
-                    // --- ตรรกะคัดกรองทางการแพทย์ (Clinical Logic) ---
                     user.recommended_role = 'Frontline';
                     user.status = 'Ready';
 
-                    // 1. เฝ้าระวัง/ส่งต่อแพทย์ (ความดันวิกฤต)
-                    if (user.pre_sys >= 180 || user.pre_dia >= 110) {
+                    // ใช้ความดันล่าสุดที่มีในการประเมิน
+                    const evalSys = user.pre_sys || user.post_sys || 0;
+                    const evalDia = user.pre_dia || user.post_dia || 0;
+                    const evalAge = user.age || 0;
+                    const evalBmi = user.bmi || 0;
+
+                    if (evalSys >= 180 || evalDia >= 110) {
                         user.recommended_role = 'Medical';
                         user.status = 'Referral';
-                    } 
-                    // 2. มีเงื่อนไข (ความดันสูง, อายุมาก, BMI สูง, หรือมีโรคประจำตัว)
-                    else if (user.pre_sys > 150 || user.age > 60 || user.bmi > 30 || (user.pre_cond !== 'ไม่มี' && user.pre_cond !== '')) {
+                    } else if ((evalSys > 150) || (evalAge > 60) || (evalBmi > 30) || (user.pre_cond && user.pre_cond !== 'ไม่มี' && user.pre_cond !== '-')) {
                         user.recommended_role = 'Support';
                         user.status = 'Conditional';
                     }
 
-                    // ตรวจสอบความขัดแย้ง (เลือกลงแนวหน้า แต่หมอให้สนับสนุน)
                     user.mismatch = (user.chosen_role === 'Frontline' && user.recommended_role !== 'Frontline');
+                    if (!user.pre_cond || user.pre_cond === '-') user.pre_cond = 'ไม่มี';
                     
                     return user;
                 });
@@ -610,25 +636,11 @@
             }
         };
 
-        // --- 2. State Management ---
-        const state = {
-            view: 'commander', // 'commander' or 'volunteer'
-            year: 'all',
-            phase: 'all', // 'all', 'pre', 'post'
-            search: '',
-            filterRole: 'all',
-            filterStatus: 'all',
-            charts: {}
-        };
-
-        // Populate Year Dropdown dynamically based on data
         const populateYears = () => {
             const select = document.getElementById('filterYear');
             const years = [...new Set(appData.map(d => d.year))].sort().reverse();
             
-            // Keep the 'all' option
             select.innerHTML = '<option value="all">รวมทั้งหมด</option>';
-            
             years.forEach(y => {
                 const opt = document.createElement('option');
                 opt.value = y;
@@ -636,17 +648,13 @@
                 select.appendChild(opt);
             });
             
-            // Set initial state year if it exists in options, else fallback to 'all'
             if (years.includes('2569')) {
                 select.value = '2569';
                 state.year = '2569';
             }
         };
 
-        // --- 3. Core Logic & Filtering ---
-        
-        // Helper: Mask name for privacy
-        const maskName = (fullName) => {
+        //        const maskName = (fullName) => {
             const parts = fullName.split(' ');
             if (parts.length > 1) {
                 return `${parts[0]} ${parts[1].charAt(0)}***`;
@@ -678,7 +686,6 @@
             document.getElementById('kpiFrontlinePct').innerText = total > 0 ? `${((frontline/total)*100).toFixed(1)}% ของทั้งหมด` : '0%';
             document.getElementById('kpiSupportPct').innerText = total > 0 ? `${((support/total)*100).toFixed(1)}% ของทั้งหมด` : '0%';
 
-            // Handle Mismatch Alert
             const mismatches = data.filter(d => d.mismatch).length;
             const alertEl = document.getElementById('mismatchAlert');
             if (mismatches > 0 && state.phase !== 'post') {
@@ -699,17 +706,16 @@
             });
             updateDashboard();
             const btn = document.querySelector('#mismatchAlert button');
-            btn.innerText = "ปรับปรุงข้อมูลสำเร็จ (เฉพาะหน้าเว็บนี้)";
+            const origText = btn.innerText;
+            btn.innerText = "ปรับปรุงข้อมูลสำเร็จ";
             btn.classList.replace('text-amber-700', 'text-emerald-700');
             btn.classList.replace('border-amber-300', 'border-emerald-300');
             setTimeout(() => {
-                updateDashboard();
-            }, 2500);
+                updateDashboard(); 
+            }, 1500);
         };
 
-        // --- 4. Chart Generation ---
-        
-        const initOrUpdateCharts = (data) => {
+        //        const initOrUpdateCharts = (data) => {
             Chart.defaults.font.family = "'Inter', 'Prompt', sans-serif";
             Chart.defaults.color = '#64748b';
 
@@ -739,15 +745,18 @@
                 }
             });
 
-            // 2. Vitals Bar Chart
+            // 2. Vitals Bar Chart (Only calculate with valid real data)
             const ctxVitals = document.getElementById('chartVitals').getContext('2d');
-            let avgPreSys = 0, avgPrePulse = 0, avgPostSys = 0, avgPostPulse = 0;
-            if(data.length > 0) {
-                avgPreSys = data.reduce((sum, d) => sum + d.pre_sys, 0) / data.length;
-                avgPrePulse = data.reduce((sum, d) => sum + d.pre_pulse, 0) / data.length;
-                avgPostSys = data.reduce((sum, d) => sum + d.post_sys, 0) / data.length;
-                avgPostPulse = data.reduce((sum, d) => sum + d.post_pulse, 0) / data.length;
-            }
+            
+            const validPre = data.filter(d => d.pre_sys !== null);
+            const validPost = data.filter(d => d.post_sys !== null);
+            const validPrePulse = data.filter(d => d.pre_pulse !== null);
+            const validPostPulse = data.filter(d => d.post_pulse !== null);
+
+            let avgPreSys = validPre.length ? validPre.reduce((sum, d) => sum + d.pre_sys, 0) / validPre.length : 0;
+            let avgPrePulse = validPrePulse.length ? validPrePulse.reduce((sum, d) => sum + d.pre_pulse, 0) / validPrePulse.length : 0;
+            let avgPostSys = validPost.length ? validPost.reduce((sum, d) => sum + d.post_sys, 0) / validPost.length : 0;
+            let avgPostPulse = validPostPulse.length ? validPostPulse.reduce((sum, d) => sum + d.post_pulse, 0) / validPostPulse.length : 0;
 
             state.charts.vitals = new Chart(ctxVitals, {
                 type: 'bar',
@@ -769,9 +778,11 @@
             const ctxDiag = document.getElementById('chartDiagnoses').getContext('2d');
             const diagCounts = {};
             data.forEach(d => {
-                d.post_diag.forEach(diag => {
-                    if(diag !== 'ปกติ') { diagCounts[diag] = (diagCounts[diag] || 0) + 1; }
-                });
+                if(d.post_diag && d.post_diag.length > 0) {
+                    d.post_diag.forEach(diag => {
+                        diagCounts[diag] = (diagCounts[diag] || 0) + 1;
+                    });
+                }
             });
             const sortedDiags = Object.entries(diagCounts).sort((a,b) => b[1] - a[1]).slice(0,5);
 
@@ -779,10 +790,10 @@
                 type: 'bar',
                 indexAxis: 'y',
                 data: {
-                    labels: sortedDiags.map(d => d[0]),
+                    labels: sortedDiags.length ? sortedDiags.map(d => d[0]) : ['ไม่มีข้อมูล'],
                     datasets: [{
                         label: 'จำนวนเคส',
-                        data: sortedDiags.map(d => d[1]),
+                        data: sortedDiags.length ? sortedDiags.map(d => d[1]) : [0],
                         backgroundColor: '#64748b',
                         borderRadius: 4
                     }]
@@ -794,11 +805,13 @@
                 }
             });
 
-            // 4. Scatter Plot
+            // 4. Scatter Plot (Only plot if age & bmi are real numbers)
             const ctxScatter = document.getElementById('chartScatter').getContext('2d');
-            const scatterDataReady = data.filter(d=>d.status==='Ready').map(d => ({x: d.age, y: d.bmi, _d: d}));
-            const scatterDataCond = data.filter(d=>d.status==='Conditional').map(d => ({x: d.age, y: d.bmi, _d: d}));
-            const scatterDataRef = data.filter(d=>d.status==='Referral').map(d => ({x: d.age, y: d.bmi, _d: d}));
+            const validScatter = data.filter(d => d.age !== null && d.bmi !== null && d.age > 0);
+            
+            const scatterDataReady = validScatter.filter(d=>d.status==='Ready').map(d => ({x: d.age, y: d.bmi, _d: d}));
+            const scatterDataCond = validScatter.filter(d=>d.status==='Conditional').map(d => ({x: d.age, y: d.bmi, _d: d}));
+            const scatterDataRef = validScatter.filter(d=>d.status==='Referral').map(d => ({x: d.age, y: d.bmi, _d: d}));
 
             state.charts.scatter = new Chart(ctxScatter, {
                 type: 'scatter',
@@ -820,7 +833,9 @@
                             callbacks: {
                                 label: (ctx) => {
                                     const d = ctx.raw._d;
-                                    return `${d.name} (อายุ: ${d.age}, BMI: ${d.bmi}, BP: ${d.pre_sys}/${d.pre_dia})`;
+                                    const sysStr = d.pre_sys !== null ? d.pre_sys : (d.post_sys !== null ? d.post_sys : '-');
+                                    const diaStr = d.pre_dia !== null ? d.pre_dia : (d.post_dia !== null ? d.post_dia : '-');
+                                    return `${d.name} (อายุ: ${d.age}, BMI: ${d.bmi}, BP: ${sysStr}/${diaStr})`;
                                 }
                             }
                         }
@@ -833,9 +848,7 @@
             Object.values(state.charts).forEach(chart => chart && chart.destroy());
         };
 
-        // --- 5. Table Rendering & Interaction ---
-        
-        const renderTable = () => {
+        //        const renderTable = () => {
             state.search = document.getElementById('searchInput').value;
             state.filterRole = document.getElementById('filterRole').value;
             state.filterStatus = document.getElementById('filterStatus').value;
@@ -844,8 +857,7 @@
             const tbody = document.getElementById('rosterTableBody');
             tbody.innerHTML = '';
 
-            // Render all matches (or limit if performance is an issue)
-            filteredData.forEach((item) => { 
+            filteredData.slice(0, 50).forEach((item) => { 
                 
                 let badgeClass, badgeIcon, badgeText;
                 if(item.status === 'Ready') {
@@ -856,14 +868,27 @@
                     badgeClass = 'bg-red-100 text-red-800 border-red-200'; badgeIcon = 'x-circle'; badgeText = 'Medical Referral';
                 }
 
-                let sys = item.pre_sys, dia = item.pre_dia, pulse = item.pre_pulse;
-                let vitalsNote = "(Pre)";
+                // การแสดงผลค่าความดันในตาราง (รองรับกรณีเป็นค่าว่าง)
+                let sys = item.pre_sys !== null ? item.pre_sys : (item.post_sys !== null ? item.post_sys : null);
+                let dia = item.pre_dia !== null ? item.pre_dia : (item.post_dia !== null ? item.post_dia : null);
+                let pulse = item.pre_pulse !== null ? item.pre_pulse : (item.post_pulse !== null ? item.post_pulse : null);
+                let vitalsNote = "(ล่าสุด)";
+
                 if(state.phase === 'post') {
                     sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)";
+                } else if (state.phase === 'pre') {
+                    sys = item.pre_sys; dia = item.pre_dia; pulse = item.pre_pulse; vitalsNote = "(Pre)";
                 }
 
-                let bpClass = sys >= 140 || dia >= 90 ? 'text-amber-600 font-semibold' : 'text-slate-600';
-                if(sys >= 180 || dia >= 110) bpClass = 'text-red-600 font-bold';
+                const sysStr = sys !== null ? sys : '-';
+                const diaStr = dia !== null ? dia : '-';
+                const pulseStr = pulse !== null ? pulse : '-';
+
+                let bpClass = (sys !== null && sys >= 140) || (dia !== null && dia >= 90) ? 'text-amber-600 font-semibold' : 'text-slate-600';
+                if((sys !== null && sys >= 180) || (dia !== null && dia >= 110)) bpClass = 'text-red-600 font-bold';
+
+                const ageStr = item.age !== null ? item.age : '-';
+                const bmiStr = item.bmi !== null ? item.bmi : '-';
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition-colors cursor-pointer group";
@@ -875,15 +900,15 @@
                         <div class="text-xs text-slate-400 font-inter">${item.id}</div>
                     </td>
                     <td class="p-4 text-center">
-                        <div>${item.age} <span class="text-xs text-slate-400">ปี</span></div>
-                        <div class="text-xs font-inter text-slate-500">BMI ${item.bmi}</div>
+                        <div>${ageStr} <span class="text-xs text-slate-400">ปี</span></div>
+                        <div class="text-xs font-inter text-slate-500">BMI ${bmiStr}</div>
                     </td>
                     <td class="p-4">
                         <div class="${bpClass} font-inter flex items-baseline gap-1">
-                            ${sys}/${dia} <span class="text-[10px] text-slate-400">${vitalsNote}</span>
+                            ${sysStr}/${diaStr} <span class="text-[10px] text-slate-400">${vitalsNote}</span>
                         </div>
                         <div class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                            <i data-lucide="heart" class="w-3 h-3 text-red-400"></i> ${pulse} bpm
+                            <i data-lucide="heart" class="w-3 h-3 ${pulseStr !== '-' ? 'text-red-400' : 'text-slate-300'}"></i> ${pulseStr} bpm
                         </div>
                     </td>
                     <td class="p-4">
@@ -908,7 +933,7 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('tableShowing').innerText = filteredData.length;
+            document.getElementById('tableShowing').innerText = Math.min(filteredData.length, 50);
             document.getElementById('tableTotal').innerText = filteredData.length;
             lucide.createIcons();
         };
@@ -921,9 +946,7 @@
             renderTable();
         };
 
-        // --- 6. UI Interactions & Modals ---
-
-        const setPhase = (phase) => {
+        //        const setPhase = (phase) => {
             state.phase = phase;
             ['All', 'Pre', 'Post'].forEach(p => {
                 const btn = document.getElementById(`phase${p}`);
@@ -944,28 +967,31 @@
             state.view = viewType;
             if(viewType === 'volunteer') {
                 document.body.classList.add('mode-volunteer');
-                // Select first conditional user or just the first user
                 const user = appData.find(d => d.status === 'Conditional') || appData[0];
-                if (user) populateVolunteerPassport(user);
+                if(user) populateVolunteerPassport(user);
             } else {
                 document.body.classList.remove('mode-volunteer');
-                updateDashboard();
+                updateDashboard(); 
             }
         };
 
         const populateVolunteerPassport = (user) => {
             document.getElementById('vp-name').innerText = user.name;
             document.getElementById('vp-id').innerText = user.id;
-            document.getElementById('vp-age').innerText = user.age;
-            document.getElementById('vp-bp').innerText = `${user.pre_sys}/${user.pre_dia}`;
-            document.getElementById('vp-pulse').innerText = user.pre_pulse;
-            document.getElementById('vp-bmi').innerText = user.bmi;
+            document.getElementById('vp-age').innerText = user.age !== null ? user.age : '-';
+            
+            const sys = user.pre_sys !== null ? user.pre_sys : (user.post_sys !== null ? user.post_sys : '-');
+            const dia = user.pre_dia !== null ? user.pre_dia : (user.post_dia !== null ? user.post_dia : '-');
+            document.getElementById('vp-bp').innerText = `${sys}/${dia}`;
+            
+            document.getElementById('vp-pulse').innerText = user.pre_pulse !== null ? user.pre_pulse : (user.post_pulse !== null ? user.post_pulse : '-');
+            document.getElementById('vp-bmi').innerText = user.bmi !== null ? user.bmi : '-';
             document.getElementById('vp-cond').innerText = user.pre_cond;
 
             const bpEl = document.getElementById('vp-bp');
-            bpEl.className = "text-lg font-bold font-inter text-brand-900"; // Reset
-            if(user.pre_sys >= 140) bpEl.classList.replace('text-brand-900', 'text-amber-600');
-            if(user.pre_sys >= 180) bpEl.classList.replace('text-amber-600', 'text-red-600');
+            bpEl.className = "text-lg font-bold font-inter text-brand-900"; 
+            if(sys !== '-' && sys >= 140) bpEl.classList.replace('text-brand-900', 'text-amber-600');
+            if(sys !== '-' && sys >= 180) bpEl.classList.replace('text-amber-600', 'text-red-600');
 
             const badgeEl = document.getElementById('vp-badge');
             const msgBox = document.getElementById('vp-message-box');
@@ -987,7 +1013,7 @@
                 badgeEl.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i><span class="text-amber-700">เหมาะสมกับงานสนับสนุน</span>`;
                 badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-amber-200";
                 msgBox.className = "bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm";
-                msgText.innerHTML = `ด้วยความห่วงใยในสุขภาพของท่าน แพทย์ประเมินว่าท่านเหมาะสมสำหรับ: <strong class="text-amber-900">ภารกิจสนับสนุนและส่งกำลังบำรุง (งดภารกิจแนวหน้า)</strong> เนื่องจาก${user.pre_sys > 140 ? 'ระดับความดันโลหิตสูงกว่าเกณฑ์' : 'ปัจจัยด้านสภาพร่างกาย'}`;
+                msgText.innerHTML = `ด้วยความห่วงใยในสุขภาพของท่าน แพทย์ประเมินว่าท่านเหมาะสมสำหรับ: <strong class="text-amber-900">ภารกิจสนับสนุนและส่งกำลังบำรุง (งดภารกิจแนวหน้า)</strong> เนื่องจากประเมินจากความดันโลหิตหรือประวัติสุขภาพ`;
                 recList.innerHTML = `
                     <li class="flex gap-2"><i data-lucide="pill" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> กรุณารับประทานยาประจำตัวตามแพทย์สั่งอย่างเคร่งครัด</li>
                     <li class="flex gap-2"><i data-lucide="thermometer-sun" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หลีกเลี่ยงการทำงานกลางแดดจัดติดต่อกันเป็นเวลานาน เพื่อป้องกันโรคลมแดด</li>
@@ -1018,6 +1044,21 @@
             else if(user.status === 'Conditional') statusBanner = '<div class="bg-amber-50 text-amber-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-amber-200 text-sm font-medium"><i data-lucide="alert-triangle" class="w-5 h-5"></i> รับรองการปฏิบัติงาน: สนับสนุน/ส่งกำลัง (มีเงื่อนไขสุขภาพ)</div>';
             else statusBanner = '<div class="bg-red-50 text-red-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-red-200 text-sm font-medium"><i data-lucide="x-circle" class="w-5 h-5"></i> งดการปฏิบัติงาน: ต้องเข้ารับการประเมินโดยแพทย์เพิ่มเติม</div>';
 
+            const preSysStr = user.pre_sys !== null ? user.pre_sys : '-';
+            const preDiaStr = user.pre_dia !== null ? user.pre_dia : '-';
+            const prePulseStr = user.pre_pulse !== null ? user.pre_pulse : '-';
+            
+            const postSysStr = user.post_sys !== null ? user.post_sys : '-';
+            const postDiaStr = user.post_dia !== null ? user.post_dia : '-';
+            const postPulseStr = user.post_pulse !== null ? user.post_pulse : '-';
+
+            const ageStr = user.age !== null ? user.age : '-';
+            const bmiStr = user.bmi !== null ? user.bmi : '-';
+
+            const postDiagHtml = (user.post_diag && user.post_diag.length > 0) 
+                ? user.post_diag.map(d => `<span class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">${d}</span>`).join('')
+                : '<span class="text-xs text-slate-400">ไม่มีข้อมูล</span>';
+
             content.innerHTML = `
                 ${statusBanner}
                 
@@ -1025,7 +1066,7 @@
                     <div>
                         <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">ข้อมูลทั่วไป</p>
                         <p class="font-bold text-brand-900 text-lg">${user.name}</p>
-                        <p class="text-sm text-slate-600 font-inter">HN: ${user.id} | อายุ: ${user.age} | BMI: ${user.bmi}</p>
+                        <p class="text-sm text-slate-600 font-inter">HN: ${user.id} | อายุ: ${ageStr} | BMI: ${bmiStr}</p>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">ความประสงค์</p>
@@ -1041,15 +1082,11 @@
                         <div class="space-y-3">
                             <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                                 <span class="text-sm text-slate-600">ความดันโลหิต</span>
-                                <span class="font-inter font-semibold ${user.pre_sys >= 140 ? 'text-amber-600' : 'text-slate-800'}">${user.pre_sys}/${user.pre_dia} mmHg</span>
+                                <span class="font-inter font-semibold ${(user.pre_sys && user.pre_sys >= 140) ? 'text-amber-600' : 'text-slate-800'}">${preSysStr}/${preDiaStr} mmHg</span>
                             </div>
                             <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                                 <span class="text-sm text-slate-600">อัตราการเต้นหัวใจ</span>
-                                <span class="font-inter font-semibold text-slate-800">${user.pre_pulse} bpm</span>
-                            </div>
-                            <div>
-                                <span class="text-sm text-slate-600 block mb-1">ความเห็นแพทย์ (Pre):</span>
-                                <span class="text-sm text-slate-800 bg-white px-2 py-1 rounded border border-slate-200 block">${user.status === 'Ready' ? 'ร่างกายสมบูรณ์ อนุญาตให้ปฏิบัติงาน' : (user.status === 'Conditional' ? 'ควรเลี่ยงงานหนัก/ความร้อนจัด' : 'ความดันวิกฤต ส่งต่อรพ.ด่วน')}</span>
+                                <span class="font-inter font-semibold text-slate-800">${prePulseStr} bpm</span>
                             </div>
                         </div>
                     </div>
@@ -1060,16 +1097,16 @@
                         <div class="space-y-3">
                             <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                                 <span class="text-sm text-slate-600">ความดันโลหิต</span>
-                                <span class="font-inter font-semibold ${user.post_sys >= 140 ? 'text-amber-600' : 'text-slate-800'}">${user.post_sys}/${user.post_dia} mmHg</span>
+                                <span class="font-inter font-semibold ${(user.post_sys && user.post_sys >= 140) ? 'text-amber-600' : 'text-slate-800'}">${postSysStr}/${postDiaStr} mmHg</span>
                             </div>
                             <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                                 <span class="text-sm text-slate-600">อัตราการเต้นหัวใจ</span>
-                                <span class="font-inter font-semibold text-slate-800">${user.post_pulse} bpm</span>
+                                <span class="font-inter font-semibold text-slate-800">${postPulseStr} bpm</span>
                             </div>
                             <div>
                                 <span class="text-sm text-slate-600 block mb-1">อาการเจ็บป่วยหลังภารกิจ:</span>
                                 <div class="flex flex-wrap gap-1">
-                                    ${user.post_diag.map(d => `<span class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">${d}</span>`).join('')}
+                                    ${postDiagHtml}
                                 </div>
                             </div>
                         </div>
@@ -1085,28 +1122,22 @@
             document.getElementById('detailModal').classList.add('hidden');
         };
 
-        // --- Initialize ---
-        document.addEventListener('DOMContentLoaded', async () => {
+        //        document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
             
-            // Fetch data from Google Sheets immediately on load
+            // เพิ่ม Loading UI ถ้าต้องการ
+            document.getElementById('lastUpdatedText').innerHTML = 'กำลังดึงข้อมูล...';
+            
             appData = await loadGoogleSheetsData();
             
-            // Update time
             const now = new Date();
             document.getElementById('lastUpdatedText').innerHTML = `อัปเดตข้อมูลล่าสุด: <span class="font-inter">${now.toLocaleTimeString('th-TH')}</span>`;
             
-            // Hide loading overlay
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.style.opacity = '0';
-            setTimeout(() => overlay.remove(), 300);
-
-            // Check if data is empty
-            if(appData.length === 0) {
-                alert("ไม่พบข้อมูลใน Google Sheets หรือรูปแบบคอลัมน์ไม่ถูกต้อง");
-            } else {
+            if(appData && appData.length > 0) {
                 populateYears();
                 updateDashboard();
+            } else {
+                alert("เกิดข้อผิดพลาดในการดึงข้อมูล โปรดตรวจสอบสิทธิ์การแชร์ (Publish to web) ของ Google Sheets");
             }
         });
 
