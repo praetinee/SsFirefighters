@@ -421,21 +421,25 @@ const fetchSheet = (gid) => {
                                 name: name,
                                 rawName: rawName,
                                 year: year,
-                                age: row['อายุ'] ? parseInt(row['อายุ']) : null,
-                                bmi: row['BMI'] ? parseFloat(row['BMI']) : null,
-                                pre_cond: row['โรคประจำตัว'] ? row['โรคประจำตัว'].trim() : 'ไม่มี',
-                                chosen_role: 'Frontline', // ปี 68 ไม่มีคอลัมน์บอกว่าเลือกภารกิจอะไร ให้ตั้งค่าเริ่มต้นเป็นแนวหน้า
+                                age: null,
+                                bmi: null,
+                                pre_cond: null,
+                                chosen_role: 'None', // เปลี่ยนค่าเริ่มต้นเป็น None กรณีปล่อยว่าง
                                 pre_sys: null, pre_dia: null, pre_pulse: null,
-                                post_sys: row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null, 
-                                post_dia: row['ความดันตัวล่าง'] ? parseInt(row['ความดันตัวล่าง']) : null, 
-                                post_pulse: row['ชีพจร'] ? parseInt(row['ชีพจร']) : null,
-                                pre_verdict: null, 
-                                post_verdict: row['ผลการตรวจสุขภาพจากแพทย์'] ? row['ผลการตรวจสุขภาพจากแพทย์'].trim() : null,
+                                post_sys: null, post_dia: null, post_pulse: null,
+                                pre_verdict: null, post_verdict: null,
                                 post_diag: []
                             };
                         }
                         
                         const user = mergedUsers[key];
+                        
+                        // เพิ่มการดึงข้อมูลภารกิจที่เลือก (รองรับสำหรับปี 69)
+                        const roleVal = row['เข้าร่วมภารกิจ'] || row['ภารกิจที่เลือก'] || row['ภารกิจ'] || row['Role'];
+                        if (roleVal && roleVal.trim() !== '-' && roleVal.trim() !== '') {
+                            const rStr = roleVal.toString();
+                            user.chosen_role = (rStr.includes('สนับสนุน') || rStr.includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
+                        }
                         
                         // จัดการอาการผิดปกติหลังภารกิจ
                         const diagStr = row['ความผิดปกติจากการวินิจฉัย'] ? row['ความผิดปกติจากการวินิจฉัย'].trim() : null;
@@ -477,6 +481,11 @@ const fetchSheet = (gid) => {
                         } else if ((evalSys > 150) || (evalAge > 60) || (evalBmi > 30) || (user.pre_cond && user.pre_cond !== 'ไม่มี' && user.pre_cond !== '-')) {
                             user.status = 'Conditional';
                         }
+                    }
+
+                    // --- ตรรกะใหม่: อิงผลลัพธ์จากภารกิจที่เลือกลงทะเบียน ---
+                    if (user.status === 'Ready' && user.chosen_role === 'Support') {
+                        user.status = 'Conditional';
                     }
 
                     user.recommended_role = user.status === 'Referral' ? 'Medical' : (user.status === 'Conditional' ? 'Support' : 'Frontline');
@@ -790,9 +799,9 @@ const renderTable = () => {
                         </div>
                     </td>
                     <td class="p-4">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${item.chosen_role === 'Frontline' ? 'bg-orange-50 text-orange-700' : 'bg-slate-100 text-slate-700'}">
-                            <i data-lucide="${item.chosen_role === 'Frontline' ? 'flame' : 'truck'}" class="w-3.5 h-3.5"></i>
-                            ${item.chosen_role === 'Frontline' ? 'แนวหน้า' : 'สนับสนุน'}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${item.chosen_role === 'Frontline' ? 'bg-orange-50 text-orange-700' : (item.chosen_role === 'Support' ? 'bg-slate-100 text-slate-700' : 'bg-slate-100 text-slate-400')}">
+                            <i data-lucide="${item.chosen_role === 'Frontline' ? 'flame' : (item.chosen_role === 'Support' ? 'truck' : 'help-circle')}" class="w-3.5 h-3.5"></i>
+                            ${item.chosen_role === 'Frontline' ? 'แนวหน้า' : (item.chosen_role === 'Support' ? 'สนับสนุน' : 'ไม่ระบุ')}
                         </span>
                         ${item.mismatch ? '<div class="text-[10px] text-amber-600 mt-1 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> ขัดแย้งผลแพทย์</div>' : ''}
                     </td>
@@ -948,7 +957,7 @@ const renderTable = () => {
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">ความประสงค์</p>
-                        <p class="text-sm font-medium ${user.mismatch ? 'text-amber-600' : 'text-slate-800'}">ภารกิจที่เลือกลง: ${user.chosen_role === 'Frontline' ? 'แนวหน้า' : 'สนับสนุน'}</p>
+                        <p class="text-sm font-medium ${user.mismatch ? 'text-amber-600' : 'text-slate-800'}">ภารกิจที่เลือกลง: ${user.chosen_role === 'Frontline' ? 'แนวหน้า' : (user.chosen_role === 'Support' ? 'สนับสนุน' : 'ไม่ระบุ')}</p>
                         <p class="text-sm font-medium text-brand-900">โรคประจำตัว: ${user.pre_cond}</p>
                     </div>
                 </div>
