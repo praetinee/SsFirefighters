@@ -405,7 +405,6 @@ const fetchSheet = (gid) => {
                     if (!data || data.length === 0) return;
                     
                     data.forEach(row => {
-                        // ใช้ชื่อคอลัมน์ให้ตรงเป๊ะกับชีต 68 หลังภารกิจ
                         const rawName = row['ชื่อ-สกุล'] ? row['ชื่อ-สกุล'].trim() : null;
                         if (!rawName || rawName === '-') return;
 
@@ -415,6 +414,7 @@ const fetchSheet = (gid) => {
                         let id = row['เลขบัตรประชาชน'] ? row['เลขบัตรประชาชน'].trim() : 'ไม่มีระบุ';
                         const key = `${year}_${normalizeKey(rawName)}`;
 
+                        // 1. สร้างโครงสร้างข้อมูลเริ่มต้น
                         if (!mergedUsers[key]) {
                             mergedUsers[key] = {
                                 id: id,
@@ -423,8 +423,8 @@ const fetchSheet = (gid) => {
                                 year: year,
                                 age: null,
                                 bmi: null,
-                                pre_cond: null,
-                                chosen_role: 'None', // เปลี่ยนค่าเริ่มต้นเป็น None กรณีปล่อยว่าง
+                                pre_cond: 'ไม่มี',
+                                chosen_role: 'None', 
                                 pre_sys: null, pre_dia: null, pre_pulse: null,
                                 post_sys: null, post_dia: null, post_pulse: null,
                                 pre_verdict: null, post_verdict: null,
@@ -434,18 +434,41 @@ const fetchSheet = (gid) => {
                         
                         const user = mergedUsers[key];
                         
-                        // เพิ่มการดึงข้อมูลภารกิจที่เลือก (รองรับสำหรับปี 69)
+                        // 2. อัปเดตข้อมูลพื้นฐาน
+                        if (row['อายุ']) user.age = parseInt(row['อายุ']);
+                        if (row['BMI']) user.bmi = parseFloat(row['BMI']);
+                        if (row['โรคประจำตัว'] && row['โรคประจำตัว'].trim() !== '-') user.pre_cond = row['โรคประจำตัว'].trim();
+
+                        // 3. ดึงข้อมูลภารกิจที่เลือก
                         const roleVal = row['เข้าร่วมภารกิจ'] || row['ภารกิจที่เลือก'] || row['ภารกิจ'] || row['Role'];
                         if (roleVal && roleVal.trim() !== '-' && roleVal.trim() !== '') {
                             const rStr = roleVal.toString();
                             user.chosen_role = (rStr.includes('สนับสนุน') || rStr.includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
                         }
                         
-                        // จัดการอาการผิดปกติหลังภารกิจ
-                        const diagStr = row['ความผิดปกติจากการวินิจฉัย'] ? row['ความผิดปกติจากการวินิจฉัย'].trim() : null;
-                        if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
-                            const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
-                            user.post_diag = [...new Set([...user.post_diag, ...diags])];
+                        // 4. ดึงข้อมูลความดันและชีพจรตาม Phase (ดักไว้รองรับปี 69 ด้วย)
+                        const sysVal = row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null;
+                        const diaVal = row['ความดันตัวล่าง'] ? parseInt(row['ความดันตัวล่าง']) : null;
+                        const pulseVal = row['ชีพจร'] ? parseInt(row['ชีพจร']) : null;
+                        const verdictVal = row['ผลการตรวจสุขภาพจากแพทย์'] ? row['ผลการตรวจสุขภาพจากแพทย์'].trim() : null;
+
+                        if (phase === 'pre') {
+                            if (sysVal !== null) user.pre_sys = sysVal;
+                            if (diaVal !== null) user.pre_dia = diaVal;
+                            if (pulseVal !== null) user.pre_pulse = pulseVal;
+                            if (verdictVal) user.pre_verdict = verdictVal;
+                        } else if (phase === 'post') {
+                            if (sysVal !== null) user.post_sys = sysVal;
+                            if (diaVal !== null) user.post_dia = diaVal;
+                            if (pulseVal !== null) user.post_pulse = pulseVal;
+                            if (verdictVal) user.post_verdict = verdictVal;
+                            
+                            // จัดการอาการผิดปกติหลังภารกิจ
+                            const diagStr = row['ความผิดปกติจากการวินิจฉัย'] ? row['ความผิดปกติจากการวินิจฉัย'].trim() : null;
+                            if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
+                                const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
+                                user.post_diag = [...new Set([...user.post_diag, ...diags])];
+                            }
                         }
                     });
                 };
