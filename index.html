@@ -437,6 +437,7 @@
                                 chosen_role: 'Frontline',
                                 pre_sys: null, pre_dia: null, pre_pulse: null,
                                 post_sys: null, post_dia: null, post_pulse: null,
+                                pre_verdict: null, post_verdict: null,
                                 post_diag: []
                             };
                         }
@@ -463,15 +464,18 @@
                         const sysVal = getVal(['ความดันตัวบน']);
                         const diaVal = getVal(['ความดันตัวล่าง']);
                         const pulseVal = getVal(['ชีพจร']);
+                        const verdictVal = getVal(['ผลการตรวจสุขภาพจากแพทย์', 'ผลการตรวจ']); // คำวินิจฉัย/ข้อสรุปของแพทย์จริงจากชีต
 
                         if (phase === 'pre') {
                             if (sysVal && sysVal !== '-') user.pre_sys = parseInt(sysVal);
                             if (diaVal && diaVal !== '-') user.pre_dia = parseInt(diaVal);
                             if (pulseVal && pulseVal !== '-') user.pre_pulse = parseInt(pulseVal);
+                            if (verdictVal) user.pre_verdict = verdictVal;
                         } else {
                             if (sysVal && sysVal !== '-') user.post_sys = parseInt(sysVal);
                             if (diaVal && diaVal !== '-') user.post_dia = parseInt(diaVal);
                             if (pulseVal && pulseVal !== '-') user.post_pulse = parseInt(pulseVal);
+                            if (verdictVal) user.post_verdict = verdictVal;
                             
                             const diagStr = getVal(['ความผิดปกติจากการวินิจฉัย', 'อาการหลังภารกิจ', 'อาการ']);
                             if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
@@ -486,23 +490,43 @@
                 mergeData(sheet69Pre, '2569', 'pre');
                 mergeData(sheet69Post, '2569', 'post');
 
+                const classifyVerdict = (text) => {
+                    if (!text) return null;
+                    const t = text.toString();
+                    if (t.includes('ไม่สามารถ')) return 'Referral';
+                    if (t.includes('ควบคุม') || t.includes('ต้องตรวจ') || t.includes('ควรตรวจ') || t.includes('ระวัง') || t.includes('ส่งตรวจ') || t.includes('ข้อจำกัด')) return 'Conditional';
+                    if (t.includes('เหมาะสมกับภารกิจ') || t.includes('ทำงานดับไฟป่าได้') || t === 'ปกติ') return 'Ready';
+                    return null; // ข้อความไม่ชัด/ไม่มีข้อมูล ('ข้อมูลไม่ครบ' ฯลฯ) -> ใช้สูตรสำรอง
+                };
+                const rank = { Referral: 3, Conditional: 2, Ready: 1 };
+
                 const finalData = Object.values(mergedUsers).map(user => {
-                    user.recommended_role = 'Frontline';
-                    user.status = 'Ready';
+                    // 1) ใช้ผลตรวจจริงจากแพทย์ตามที่บันทึกในชีตก่อนเสมอ (เอาสถานะที่ "หนัก" ที่สุดจากทั้งก่อน/หลังภารกิจ)
+                    const preStat = classifyVerdict(user.pre_verdict);
+                    const postStat = classifyVerdict(user.post_verdict);
+                    let verdictStatus = null;
+                    [preStat, postStat].forEach(s => {
+                        if (s && (!verdictStatus || rank[s] > rank[verdictStatus])) verdictStatus = s;
+                    });
 
-                    const evalSys = user.pre_sys !== null ? user.pre_sys : (user.post_sys !== null ? user.post_sys : 0);
-                    const evalDia = user.pre_dia !== null ? user.pre_dia : (user.post_dia !== null ? user.post_dia : 0);
-                    const evalAge = user.age || 0;
-                    const evalBmi = user.bmi || 0;
+                    if (verdictStatus) {
+                        user.status = verdictStatus;
+                    } else {
+                        // 2) สำรอง: ใช้เมื่อชีตไม่มีข้อความสรุปผลแพทย์ระบุไว้เลย
+                        user.status = 'Ready';
+                        const evalSys = user.pre_sys !== null ? user.pre_sys : (user.post_sys !== null ? user.post_sys : 0);
+                        const evalDia = user.pre_dia !== null ? user.pre_dia : (user.post_dia !== null ? user.post_dia : 0);
+                        const evalAge = user.age || 0;
+                        const evalBmi = user.bmi || 0;
 
-                    if (evalSys >= 180 || evalDia >= 110) {
-                        user.recommended_role = 'Medical';
-                        user.status = 'Referral';
-                    } else if ((evalSys > 150) || (evalAge > 60) || (evalBmi > 30) || (user.pre_cond && user.pre_cond !== 'ไม่มี' && user.pre_cond !== '-')) {
-                        user.recommended_role = 'Support';
-                        user.status = 'Conditional';
+                        if (evalSys >= 180 || evalDia >= 110) {
+                            user.status = 'Referral';
+                        } else if ((evalSys > 150) || (evalAge > 60) || (evalBmi > 30) || (user.pre_cond && user.pre_cond !== 'ไม่มี' && user.pre_cond !== '-')) {
+                            user.status = 'Conditional';
+                        }
                     }
 
+                    user.recommended_role = user.status === 'Referral' ? 'Medical' : (user.status === 'Conditional' ? 'Support' : 'Frontline');
                     user.mismatch = (user.chosen_role === 'Frontline' && user.recommended_role !== 'Frontline');
                     if (!user.pre_cond || user.pre_cond === '-') user.pre_cond = 'ไม่มี';
                     if (user.post_diag.length === 0) user.post_diag = ['ปกติ'];
