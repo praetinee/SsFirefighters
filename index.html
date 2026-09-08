@@ -351,6 +351,28 @@
             return name.replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|ว่าที่\s*ร\.ต\.|จ\.ส\.อ\.|ส\.อ\.)\s*/g, '').trim();
         };
 
+        // ใช้สำหรับ "จับคู่" คนคนเดียวกันข้ามชีต/ข้ามคำนำหน้าที่สะกดไม่ตรงกัน (เช่น "ว่าที่ ร.ต." / "ว่าที่รต." / "นายว่าที่ รต.")
+        // ไม่กระทบชื่อที่แสดงผลบนหน้าจอ (ยังใช้ cleanName ตามเดิม)
+        const normalizeKey = (name) => {
+            if (!name) return "";
+            let s = name.replace(/[.\s]/g, ''); // ตัดจุดและช่องว่างทั้งหมดออกเพื่อกันสะกดเพี้ยน
+            const prefixes = [
+                'ว่าที่ร้อยตรี', 'ว่าที่รต',
+                'นางสาว', 'นาย', 'นาง', 'นส',
+                'จ่าสิบเอก', 'จสอ', 'สิบเอก', 'สอ',
+                'อาสาสมัครทหารพราน', 'อสท', 'อาสาสมัคร', 'อส',
+                'ดช', 'ดญ', 'มญ', 'มอ'
+            ];
+            let changed = true;
+            while (changed) {
+                changed = false;
+                for (const p of prefixes) {
+                    if (s.startsWith(p)) { s = s.slice(p.length); changed = true; break; }
+                }
+            }
+            return s;
+        };
+
         const loadGoogleSheetsData = async () => {
             const fetchSheet = (sheetName) => {
                 return new Promise((resolve) => {
@@ -384,7 +406,10 @@
                         const getVal = (keys) => {
                             for(let k of keys) {
                                 const exact = Object.keys(row).find(key => key.trim() === k);
-                                if(exact && row[exact] !== undefined && row[exact] !== '') return row[exact];
+                                if(exact && row[exact] !== undefined) {
+                                    const v = row[exact].trim();
+                                    if (v !== '' && v !== '-') return v;
+                                }
                             }
                             return null;
                         };
@@ -398,7 +423,7 @@
                         let id = getVal(['เลขบัตรประชาชน', 'HN', 'รหัส', 'ID']);
                         if (!id || id === '-') id = 'ไม่มีระบุ';
                         
-                        const key = `${year}_${name}`; // Use name as main key for merging within a year
+                        const key = `${year}_${normalizeKey(rawName)}`; // ใช้ชื่อที่ตัดคำนำหน้า/ช่องว่างแล้ว กันคนซ้ำถูกนับเป็นคนละคน
 
                         if (!mergedUsers[key]) {
                             mergedUsers[key] = {
@@ -430,7 +455,7 @@
                         const condVal = getVal(['โรคประจำตัว', 'ประวัติโรค']);
                         if (condVal && condVal !== '-') user.pre_cond = condVal;
 
-                        const roleVal = getVal(['ตำแหน่ง', 'ภารกิจที่เลือก', 'ภารกิจ', 'Role']);
+                        const roleVal = getVal(['เข้าร่วมภารกิจ', 'ภารกิจที่เลือก', 'ภารกิจ', 'Role']);
                         if (roleVal) {
                             user.chosen_role = (roleVal.toString().includes('สนับสนุน') || roleVal.toString().includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
                         }
