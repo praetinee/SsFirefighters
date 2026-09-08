@@ -37,10 +37,6 @@
                             conditional: '#b45309', // Amber
                             referral: '#b91c1c', // Crimson
                         }
-                    },
-                    boxShadow: {
-                        'soft': '0 4px 20px -2px rgba(15, 23, 42, 0.05)',
-                        'card': '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.025)',
                     }
                 }
             }
@@ -57,51 +53,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
-        body {
-            background-color: #f1f5f9;
-            color: #1e293b;
-        }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
-
-        /* Animations */
-        .fade-in {
-            animation: fadeIn 0.4s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .modal-backdrop {
-            backdrop-filter: blur(4px);
-        }
-
-        /* Hide elements based on view state */
+        body { background-color: #f1f5f9; color: #1e293b; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-backdrop { backdrop-filter: blur(4px); }
         .view-commander { display: block; }
         .view-volunteer { display: none; }
-        
         body.mode-volunteer .view-commander { display: none !important; }
         body.mode-volunteer .view-volunteer { display: block !important; }
-
-        /* Loading Overlay */
-        #loadingOverlay {
-            transition: opacity 0.3s ease;
-        }
+        #loadingOverlay { transition: opacity 0.3s ease; }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col relative">
@@ -109,30 +73,22 @@
     <!-- Loading Screen -->
     <div id="loadingOverlay" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
         <i data-lucide="loader-2" class="w-10 h-10 text-brand-900 animate-spin mb-4"></i>
-        <p class="text-brand-900 font-medium">กำลังโหลดข้อมูลจาก Google Sheets...</p>
+        <p class="text-brand-900 font-medium">กำลังโหลดและผสานข้อมูลจาก Google Sheets...</p>
     </div>
 
     <header class="bg-brand-900 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <!-- Logo & Title -->
             <div class="flex items-center gap-3">
-                <div class="bg-accent-700 p-2 rounded-lg">
-                    <i data-lucide="flame" class="w-6 h-6 text-white"></i>
-                </div>
+                <div class="bg-accent-700 p-2 rounded-lg"><i data-lucide="flame" class="w-6 h-6 text-white"></i></div>
                 <div>
                     <h1 class="text-lg font-semibold tracking-wide hidden sm:block">Wildfire Volunteer Health & Mission Dispatch System</h1>
                     <h1 class="text-lg font-semibold tracking-wide sm:hidden">WF Health Dispatch</h1>
                 </div>
             </div>
-
-            <!-- Global Controls -->
             <div class="flex items-center gap-4">
-                <!-- Data Status (Sync) -->
                 <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-sm">
                     <i data-lucide="check-circle-2" class="w-4 h-4"></i> เชื่อมต่อ Google Sheets แล้ว
                 </div>
-
-                <!-- View Switcher -->
                 <div class="bg-brand-800 p-1 rounded-lg flex items-center text-sm border border-brand-500/30">
                     <button id="btnCommanderView" class="px-3 py-1.5 rounded-md bg-white text-brand-900 font-medium transition-colors flex items-center gap-2" onclick="switchView('commander')">
                         <i data-lucide="shield-check" class="w-4 h-4"></i><span class="hidden md:inline">แพทย์/ผบ.</span>
@@ -143,30 +99,22 @@
                 </div>
             </div>
         </div>
-
-        <!-- Sub-header Filters (Commander View Only) -->
         <div class="bg-brand-800 border-b border-brand-500/20 view-commander">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between overflow-x-auto">
                 <div class="flex items-center gap-4 min-w-max">
-                    <!-- Year Filter -->
                     <div class="flex items-center gap-2">
                         <label class="text-brand-100 text-sm font-medium">ปีงบประมาณ:</label>
                         <select id="filterYear" class="bg-brand-900 border border-brand-500/50 text-white text-sm rounded-md focus:ring-accent-500 focus:border-accent-500 block p-1.5" onchange="updateDashboard()">
                             <option value="all">รวมทั้งหมด</option>
-                            <!-- Options will be populated dynamically -->
                         </select>
                     </div>
-                    
                     <div class="h-6 w-px bg-brand-500/30"></div>
-
-                    <!-- Phase Toggle -->
                     <div class="flex items-center bg-brand-900 rounded-md p-0.5 border border-brand-500/30 text-sm">
                         <button id="phaseAll" class="px-3 py-1 rounded-sm bg-brand-500/20 text-white transition-colors" onclick="setPhase('all')">ภาพรวม</button>
                         <button id="phasePre" class="px-3 py-1 rounded-sm text-brand-100 hover:text-white transition-colors" onclick="setPhase('pre')">ก่อนภารกิจ</button>
                         <button id="phasePost" class="px-3 py-1 rounded-sm text-brand-100 hover:text-white transition-colors" onclick="setPhase('post')">หลังภารกิจ</button>
                     </div>
                 </div>
-                
                 <div class="text-sm text-brand-100 hidden lg:block" id="lastUpdatedText">
                     อัปเดตข้อมูลล่าสุด: กำลังดึงข้อมูล...
                 </div>
@@ -175,8 +123,6 @@
     </header>
 
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full view-commander">
-        
-        <!-- Job-Fitness Mismatch Alert -->
         <div id="mismatchAlert" class="hidden mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-card fade-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-start gap-3">
                 <i data-lucide="alert-triangle" class="w-6 h-6 text-amber-600 shrink-0 mt-0.5"></i>
@@ -190,9 +136,7 @@
             </button>
         </div>
 
-        <!-- KPI Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Card 1: Total -->
             <div class="bg-white rounded-xl p-5 shadow-card border border-slate-100 flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-slate-500 mb-1">กำลังพลทั้งหมด</p>
@@ -200,16 +144,9 @@
                         <h2 id="kpiTotal" class="text-3xl font-bold font-inter text-brand-900">0</h2>
                         <span class="text-sm text-slate-500">นาย</span>
                     </div>
-                    <p class="text-xs text-emerald-600 mt-2 flex items-center gap-1">
-                        <i data-lucide="check-circle" class="w-3 h-3"></i> ตรวจสุขภาพครบ 100%
-                    </p>
                 </div>
-                <div class="bg-brand-50 p-3 rounded-full">
-                    <i data-lucide="users" class="w-6 h-6 text-brand-500"></i>
-                </div>
+                <div class="bg-brand-50 p-3 rounded-full"><i data-lucide="users" class="w-6 h-6 text-brand-500"></i></div>
             </div>
-
-            <!-- Card 2: Frontline -->
             <div class="bg-white rounded-xl p-5 shadow-card border border-slate-100 flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-slate-500 mb-1">ความพร้อมแนวหน้า</p>
@@ -219,12 +156,8 @@
                     </div>
                     <p id="kpiFrontlinePct" class="text-xs text-slate-500 mt-2">0% ของทั้งหมด</p>
                 </div>
-                <div class="bg-green-50 p-3 rounded-full border border-green-100">
-                    <i data-lucide="flame" class="w-6 h-6 text-status-ready"></i>
-                </div>
+                <div class="bg-green-50 p-3 rounded-full border border-green-100"><i data-lucide="flame" class="w-6 h-6 text-status-ready"></i></div>
             </div>
-
-            <!-- Card 3: Support -->
             <div class="bg-white rounded-xl p-5 shadow-card border border-slate-100 flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-slate-500 mb-1">กำลังพลฝ่ายสนับสนุน</p>
@@ -234,12 +167,8 @@
                     </div>
                     <p id="kpiSupportPct" class="text-xs text-slate-500 mt-2">0% ของทั้งหมด</p>
                 </div>
-                <div class="bg-amber-50 p-3 rounded-full border border-amber-100">
-                    <i data-lucide="truck" class="w-6 h-6 text-status-conditional"></i>
-                </div>
+                <div class="bg-amber-50 p-3 rounded-full border border-amber-100"><i data-lucide="truck" class="w-6 h-6 text-status-conditional"></i></div>
             </div>
-
-            <!-- Card 4: Medical Alert -->
             <div class="bg-white rounded-xl p-5 shadow-card border border-slate-100 flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-slate-500 mb-1">เฝ้าระวัง/ส่งต่อแพทย์</p>
@@ -247,39 +176,25 @@
                         <h2 id="kpiAlert" class="text-3xl font-bold font-inter text-status-referral">0</h2>
                         <span class="text-sm text-slate-500">นาย</span>
                     </div>
-                    <p class="text-xs text-red-600 mt-2 flex items-center gap-1 font-medium">
-                        <i data-lucide="activity" class="w-3 h-3"></i> งดภารกิจสนาม
-                    </p>
+                    <p class="text-xs text-red-600 mt-2 flex items-center gap-1 font-medium"><i data-lucide="activity" class="w-3 h-3"></i> งดภารกิจสนาม</p>
                 </div>
-                <div class="bg-red-50 p-3 rounded-full border border-red-100">
-                    <i data-lucide="heart-pulse" class="w-6 h-6 text-status-referral"></i>
-                </div>
+                <div class="bg-red-50 p-3 rounded-full border border-red-100"><i data-lucide="heart-pulse" class="w-6 h-6 text-status-referral"></i></div>
             </div>
         </div>
 
-        <!-- Charts Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <!-- Chart 1: Fitness Distribution -->
             <div class="bg-white p-5 rounded-xl shadow-card border border-slate-100">
                 <h3 class="text-base font-semibold text-brand-900 mb-4 flex items-center gap-2">
                     <i data-lucide="pie-chart" class="w-5 h-5 text-brand-500"></i> สัดส่วนความพร้อมรายภารกิจ
                 </h3>
-                <div class="relative h-64 w-full flex justify-center">
-                    <canvas id="chartFitness"></canvas>
-                </div>
+                <div class="relative h-64 w-full flex justify-center"><canvas id="chartFitness"></canvas></div>
             </div>
-
-            <!-- Chart 2: BP/Pulse Pre vs Post -->
             <div class="bg-white p-5 rounded-xl shadow-card border border-slate-100">
                 <h3 class="text-base font-semibold text-brand-900 mb-4 flex items-center gap-2">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-500"></i> ความเครียดระบบหัวใจและหลอดเลือด (เฉลี่ย)
+                    <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-500"></i> ความเครียดระบบหัวใจและหลอดเลือด (เฉพาะผู้ที่มีข้อมูล)
                 </h3>
-                <div class="relative h-64 w-full">
-                    <canvas id="chartVitals"></canvas>
-                </div>
+                <div class="relative h-64 w-full"><canvas id="chartVitals"></canvas></div>
             </div>
-
-            <!-- Chart 3: Post-mission Diagnoses -->
             <div class="bg-white p-5 rounded-xl shadow-card border border-slate-100">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-base font-semibold text-brand-900 flex items-center gap-2">
@@ -287,30 +202,21 @@
                     </h3>
                     <span class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">ข้อมูลเฉพาะ Post-mission</span>
                 </div>
-                <div class="relative h-64 w-full">
-                    <canvas id="chartDiagnoses"></canvas>
-                </div>
+                <div class="relative h-64 w-full"><canvas id="chartDiagnoses"></canvas></div>
             </div>
-
-            <!-- Chart 4: Heat Stroke Vulnerability -->
             <div class="bg-white p-5 rounded-xl shadow-card border border-slate-100">
                 <h3 class="text-base font-semibold text-brand-900 mb-4 flex items-center gap-2">
                     <i data-lucide="scatter-chart" class="w-5 h-5 text-brand-500"></i> ความเสี่ยง Heat Stroke (อายุ vs BMI)
                 </h3>
-                <div class="relative h-64 w-full">
-                    <canvas id="chartScatter"></canvas>
-                </div>
+                <div class="relative h-64 w-full"><canvas id="chartScatter"></canvas></div>
             </div>
         </div>
 
-        <!-- Dispatch Roster Section -->
         <div class="bg-white rounded-xl shadow-card border border-slate-100 overflow-hidden">
             <div class="p-5 border-b border-slate-200 bg-brand-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 class="text-lg font-semibold text-brand-900 flex items-center gap-2">
                     <i data-lucide="clipboard-list" class="w-5 h-5 text-accent-700"></i> ทะเบียนรายชื่อและจัดสรรกำลังพล
                 </h3>
-                
-                <!-- Table Filters -->
                 <div class="flex flex-wrap items-center gap-3">
                     <div class="relative">
                         <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
@@ -329,7 +235,6 @@
                     </select>
                 </div>
             </div>
-
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -343,46 +248,30 @@
                         </tr>
                     </thead>
                     <tbody id="rosterTableBody" class="divide-y divide-slate-100 text-sm">
-                        <!-- Rows rendered via JS -->
                     </tbody>
                 </table>
             </div>
-            <!-- Pagination (Mock) -->
             <div class="p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
                 <span>แสดง <span id="tableShowing">0</span> จาก <span id="tableTotal">0</span> รายการ</span>
             </div>
         </div>
     </main>
 
-    <!-- Volunteer Personal Passport View (Visible when mode switched) -->
     <main class="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-8 w-full view-volunteer">
-        
         <div class="text-center mb-8 fade-in">
             <h2 class="text-2xl font-bold text-brand-900 mb-2">Personal Health Passport</h2>
             <p class="text-slate-500">สมุดพกสุขภาพอาสาสมัครดับไฟป่า</p>
         </div>
-
-        <!-- Passport Card -->
         <div id="passportCard" class="bg-white rounded-2xl shadow-soft overflow-hidden border border-slate-100 fade-in">
-            <!-- Header Pattern -->
             <div class="h-24 bg-gradient-to-r from-brand-900 to-brand-700 relative">
                 <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,#fff_1px,transparent_0)] [background-size:16px_16px]"></div>
-                <!-- Avatar -->
                 <div class="absolute -bottom-10 left-6">
                     <div class="w-20 h-20 bg-white rounded-full p-1 shadow-md">
-                        <div class="w-full h-full bg-slate-200 rounded-full flex items-center justify-center text-slate-500 overflow-hidden">
-                            <i data-lucide="user" class="w-10 h-10"></i>
-                        </div>
+                        <div class="w-full h-full bg-slate-200 rounded-full flex items-center justify-center text-slate-500 overflow-hidden"><i data-lucide="user" class="w-10 h-10"></i></div>
                     </div>
                 </div>
-                <!-- Status Badge -->
-                <div class="absolute right-6 top-6">
-                    <span id="vp-badge" class="px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm">
-                        <!-- Filled via JS -->
-                    </span>
-                </div>
+                <div class="absolute right-6 top-6"><span id="vp-badge" class="px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm"></span></div>
             </div>
-
             <div class="pt-14 px-6 pb-6">
                 <div class="flex justify-between items-start mb-6">
                     <div>
@@ -390,15 +279,9 @@
                         <p class="text-slate-500 text-sm">รหัสอาสา: <span id="vp-id" class="font-inter">HN-XXXX</span> • อายุ: <span id="vp-age" class="font-inter">XX</span> ปี</p>
                     </div>
                 </div>
-
-                <!-- Positive Framing Message -->
                 <div id="vp-message-box" class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm">
-                    <p id="vp-message" class="text-green-800">
-                        <!-- Message via JS -->
-                    </p>
+                    <p id="vp-message" class="text-green-800"></p>
                 </div>
-
-                <!-- Vitals Grid -->
                 <h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">ผลตรวจร่างกายล่าสุด</h4>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div class="border border-slate-100 rounded-lg p-3 bg-slate-50 text-center">
@@ -421,18 +304,11 @@
                         <div id="vp-cond" class="text-sm font-medium text-brand-900 truncate mt-1">ไม่มี</div>
                     </div>
                 </div>
-
-                <!-- Recommendations -->
                 <h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">คำแนะนำจากแพทย์</h4>
-                <ul id="vp-recommendations" class="space-y-2 text-sm text-slate-600">
-                    <!-- Added via JS -->
-                </ul>
+                <ul id="vp-recommendations" class="space-y-2 text-sm text-slate-600"></ul>
             </div>
-            <div class="bg-slate-50 p-4 border-t border-slate-100 text-center text-xs text-slate-400">
-                ข้อมูลอัปเดตล่าสุดจากการตรวจก่อนปฏิบัติภารกิจ
-            </div>
+            <div class="bg-slate-50 p-4 border-t border-slate-100 text-center text-xs text-slate-400">ข้อมูลอัปเดตล่าสุดจากการตรวจก่อนปฏิบัติภารกิจ</div>
         </div>
-
         <div class="mt-8 text-center">
             <button onclick="switchView('commander')" class="text-brand-500 hover:text-brand-900 text-sm flex items-center justify-center gap-2 mx-auto transition-colors">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับสู่หน้าผู้บัญชาการ
@@ -440,22 +316,15 @@
         </div>
     </main>
 
-    <!-- Commander Detail Modal -->
     <div id="detailModal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-slate-900/40 modal-backdrop" onclick="closeModal()"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto pointer-events-auto transform transition-all">
                 <div class="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex justify-between items-center z-10">
                     <h2 class="text-lg font-bold text-brand-900">ประวัติสุขภาพเชิงลึก (Clinical View)</h2>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-colors">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
+                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
-                
-                <div class="p-6" id="modalContent">
-                    <!-- Populated by JS -->
-                </div>
-                
+                <div class="p-6" id="modalContent"></div>
                 <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end gap-3 rounded-b-xl">
                     <button onclick="closeModal()" class="px-4 py-2 border border-slate-300 rounded-md text-slate-700 bg-white hover:bg-slate-50 text-sm font-medium transition-colors">ปิดหน้าต่าง</button>
                 </div>
@@ -464,7 +333,7 @@
     </div>
 
     <script>
-        //        const SPREADSHEET_ID = "1MaFKIXE8f0qkF4iz-Y1Er6e0k8CmLHwhJLVsDIbIOiI";
+        const SPREADSHEET_ID = '1MaFKIXE8f0qkF4iz-Y1Er6e0k8CmLHwhJLVsDIbIOiI';
         let appData = []; 
 
         const state = {
@@ -477,7 +346,12 @@
             charts: {}
         };
 
-        //        const loadGoogleSheetsData = async () => {
+        const cleanName = (name) => {
+            if (!name) return "";
+            return name.replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|ว่าที่\s*ร\.ต\.|จ\.ส\.อ\.|ส\.อ\.)\s*/g, '').trim();
+        };
+
+        const loadGoogleSheetsData = async () => {
             const fetchSheet = (sheetName) => {
                 return new Promise((resolve) => {
                     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
@@ -495,7 +369,6 @@
             };
 
             try {
-                // ดึงข้อมูล 3 ชีตตามที่ระบุ
                 const [sheet68Post, sheet69Pre, sheet69Post] = await Promise.all([
                     fetchSheet('68 หลังภารกิจ'),
                     fetchSheet('69 ก่อนภารกิจ'),
@@ -508,7 +381,6 @@
                     if (!data || data.length === 0) return;
                     
                     data.forEach(row => {
-                        // Helper ฟังก์ชันค้นหาชื่อคอลัมน์แบบยืดหยุ่น
                         const getVal = (keys) => {
                             for(let k of keys) {
                                 const exact = Object.keys(row).find(key => key.trim() === k);
@@ -517,18 +389,22 @@
                             return null;
                         };
 
-                        const name = getVal(['ชื่อ-สกุล', 'ชื่อ', 'ชื่อ สกุล', 'Name']);
-                        if (!name) return; // ข้ามบรรทัดที่ไม่มีชื่อ
+                        const rawName = getVal(['ชื่อ-สกุล', 'ชื่อ', 'ชื่อ สกุล', 'Name']);
+                        if (!rawName || rawName === '-') return;
 
-                        const rawId = getVal(['รหัส', 'HN', 'ID']);
-                        const id = rawId || name; // ถ้ารหัสไม่มี ให้ใช้ชื่อเป็นคีย์สำรอง
-                        const key = `${year}_${id}`;
+                        const name = cleanName(rawName);
+                        if (!name) return;
+
+                        let id = getVal(['เลขบัตรประชาชน', 'HN', 'รหัส', 'ID']);
+                        if (!id || id === '-') id = 'ไม่มีระบุ';
+                        
+                        const key = `${year}_${name}`; // Use name as main key for merging within a year
 
                         if (!mergedUsers[key]) {
-                            // ค่าเริ่มต้นเป็น null ทั้งหมด เพื่อไม่เมคข้อมูลเอง
                             mergedUsers[key] = {
                                 id: id,
                                 name: name,
+                                rawName: rawName,
                                 year: year,
                                 age: null,
                                 bmi: null,
@@ -542,63 +418,45 @@
                         
                         const user = mergedUsers[key];
                         
+                        // Update ID if we found a better one
+                        if (user.id === 'ไม่มีระบุ' && id !== 'ไม่มีระบุ') user.id = id;
+
                         const ageVal = getVal(['อายุ', 'Age']);
-                        if (ageVal) user.age = parseInt(ageVal) || user.age;
+                        if (ageVal && ageVal !== '-') user.age = parseInt(ageVal) || user.age;
 
                         const bmiVal = getVal(['BMI', 'ดัชนีมวลกาย']);
-                        if (bmiVal) user.bmi = parseFloat(bmiVal) || user.bmi;
+                        if (bmiVal && bmiVal !== '-') user.bmi = parseFloat(bmiVal) || user.bmi;
 
                         const condVal = getVal(['โรคประจำตัว', 'ประวัติโรค']);
-                        if (condVal) user.pre_cond = condVal;
+                        if (condVal && condVal !== '-') user.pre_cond = condVal;
 
-                        const roleVal = getVal(['ภารกิจที่เลือก', 'ภารกิจ', 'Role']);
-                        if (roleVal) user.chosen_role = roleVal.toString().includes('สนับสนุน') ? 'Support' : 'Frontline';
-
-                        const parseBP = (bpStr) => {
-                            if (!bpStr) return null;
-                            const parts = bpStr.toString().split(/[\/\\\-]/);
-                            if (parts.length >= 2) return { sys: parseInt(parts[0]), dia: parseInt(parts[1]) };
-                            return null;
-                        };
-
-                        // ค้นหาคอลัมน์ความดัน
-                        let bpPreStr = getVal(['ความดันก่อน', 'BP Pre']);
-                        let bpPostStr = getVal(['ความดันหลัง', 'BP Post']);
-                        let genericBpStr = getVal(['ความดัน', 'BP', 'ความดันโลหิต']);
-                        
-                        if (phase === 'pre' && genericBpStr && !bpPreStr) bpPreStr = genericBpStr;
-                        if (phase === 'post' && genericBpStr && !bpPostStr) bpPostStr = genericBpStr;
-
-                        if (bpPreStr) {
-                            const bp = parseBP(bpPreStr);
-                            if (bp) { user.pre_sys = bp.sys; user.pre_dia = bp.dia; }
-                        }
-                        if (bpPostStr) {
-                            const bp = parseBP(bpPostStr);
-                            if (bp) { user.post_sys = bp.sys; user.post_dia = bp.dia; }
+                        const roleVal = getVal(['ตำแหน่ง', 'ภารกิจที่เลือก', 'ภารกิจ', 'Role']);
+                        if (roleVal) {
+                            user.chosen_role = (roleVal.toString().includes('สนับสนุน') || roleVal.toString().includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
                         }
 
-                        // ค้นหาคอลัมน์ชีพจร
-                        let pulsePreStr = getVal(['ชีพจรก่อน', 'Pulse Pre']);
-                        let pulsePostStr = getVal(['ชีพจรหลัง', 'Pulse Post']);
-                        let genericPulseStr = getVal(['ชีพจร', 'Pulse', 'อัตราการเต้นหัวใจ']);
+                        const sysVal = getVal(['ความดันตัวบน']);
+                        const diaVal = getVal(['ความดันตัวล่าง']);
+                        const pulseVal = getVal(['ชีพจร']);
 
-                        if (phase === 'pre' && genericPulseStr && !pulsePreStr) pulsePreStr = genericPulseStr;
-                        if (phase === 'post' && genericPulseStr && !pulsePostStr) pulsePostStr = genericPulseStr;
-
-                        if (pulsePreStr) user.pre_pulse = parseInt(pulsePreStr) || user.pre_pulse;
-                        if (pulsePostStr) user.post_pulse = parseInt(pulsePostStr) || user.post_pulse;
-
-                        // อาการ
-                        const diagStr = getVal(['อาการหลังภารกิจ', 'อาการ', 'Symptoms']);
-                        if (diagStr) {
-                            const diags = diagStr.split(',').map(s => s.trim()).filter(s => s && s !== '-' && s !== 'ปกติ' && s !== 'ไม่มี');
-                            user.post_diag = [...new Set([...user.post_diag, ...diags])]; // ตัดตัวซ้ำ
+                        if (phase === 'pre') {
+                            if (sysVal && sysVal !== '-') user.pre_sys = parseInt(sysVal);
+                            if (diaVal && diaVal !== '-') user.pre_dia = parseInt(diaVal);
+                            if (pulseVal && pulseVal !== '-') user.pre_pulse = parseInt(pulseVal);
+                        } else {
+                            if (sysVal && sysVal !== '-') user.post_sys = parseInt(sysVal);
+                            if (diaVal && diaVal !== '-') user.post_dia = parseInt(diaVal);
+                            if (pulseVal && pulseVal !== '-') user.post_pulse = parseInt(pulseVal);
+                            
+                            const diagStr = getVal(['ความผิดปกติจากการวินิจฉัย', 'อาการหลังภารกิจ', 'อาการ']);
+                            if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
+                                const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
+                                user.post_diag = [...new Set([...user.post_diag, ...diags])];
+                            }
                         }
                     });
                 };
 
-                // รวมข้อมูลตามชีต (ข้อมูลใครมีแค่ไหน ก็อยู่แค่นั้น)
                 mergeData(sheet68Post, '2568', 'post');
                 mergeData(sheet69Pre, '2569', 'pre');
                 mergeData(sheet69Post, '2569', 'post');
@@ -607,9 +465,8 @@
                     user.recommended_role = 'Frontline';
                     user.status = 'Ready';
 
-                    // ใช้ความดันล่าสุดที่มีในการประเมิน
-                    const evalSys = user.pre_sys || user.post_sys || 0;
-                    const evalDia = user.pre_dia || user.post_dia || 0;
+                    const evalSys = user.pre_sys !== null ? user.pre_sys : (user.post_sys !== null ? user.post_sys : 0);
+                    const evalDia = user.pre_dia !== null ? user.pre_dia : (user.post_dia !== null ? user.post_dia : 0);
                     const evalAge = user.age || 0;
                     const evalBmi = user.bmi || 0;
 
@@ -623,15 +480,18 @@
 
                     user.mismatch = (user.chosen_role === 'Frontline' && user.recommended_role !== 'Frontline');
                     if (!user.pre_cond || user.pre_cond === '-') user.pre_cond = 'ไม่มี';
+                    if (user.post_diag.length === 0) user.post_diag = ['ปกติ'];
                     
                     return user;
                 });
+                
+                // Sort by ID / Name to be consistent
+                finalData.sort((a,b) => a.name.localeCompare(b.name, 'th'));
 
                 return finalData;
 
             } catch (err) {
                 console.error("Critical error:", err);
-                alert("เกิดข้อผิดพลาดในการดึงข้อมูลจาก Google Sheets");
                 return [];
             }
         };
@@ -654,7 +514,7 @@
             }
         };
 
-        //        const maskName = (fullName) => {
+        const maskName = (fullName) => {
             const parts = fullName.split(' ');
             if (parts.length > 1) {
                 return `${parts[0]} ${parts[1].charAt(0)}***`;
@@ -715,7 +575,7 @@
             }, 1500);
         };
 
-        //        const initOrUpdateCharts = (data) => {
+        const initOrUpdateCharts = (data) => {
             Chart.defaults.font.family = "'Inter', 'Prompt', sans-serif";
             Chart.defaults.color = '#64748b';
 
@@ -745,18 +605,17 @@
                 }
             });
 
-            // 2. Vitals Bar Chart (Only calculate with valid real data)
+            // 2. Vitals Bar Chart (Calculate only with valid data)
             const ctxVitals = document.getElementById('chartVitals').getContext('2d');
+            let avgPreSys = 0, avgPrePulse = 0, avgPostSys = 0, avgPostPulse = 0;
+            let countPre = 0, countPost = 0;
             
-            const validPre = data.filter(d => d.pre_sys !== null);
-            const validPost = data.filter(d => d.post_sys !== null);
-            const validPrePulse = data.filter(d => d.pre_pulse !== null);
-            const validPostPulse = data.filter(d => d.post_pulse !== null);
-
-            let avgPreSys = validPre.length ? validPre.reduce((sum, d) => sum + d.pre_sys, 0) / validPre.length : 0;
-            let avgPrePulse = validPrePulse.length ? validPrePulse.reduce((sum, d) => sum + d.pre_pulse, 0) / validPrePulse.length : 0;
-            let avgPostSys = validPost.length ? validPost.reduce((sum, d) => sum + d.post_sys, 0) / validPost.length : 0;
-            let avgPostPulse = validPostPulse.length ? validPostPulse.reduce((sum, d) => sum + d.post_pulse, 0) / validPostPulse.length : 0;
+            data.forEach(d => {
+                if(d.pre_sys !== null) { avgPreSys += d.pre_sys; avgPrePulse += d.pre_pulse; countPre++; }
+                if(d.post_sys !== null) { avgPostSys += d.post_sys; avgPostPulse += d.post_pulse; countPost++; }
+            });
+            if(countPre > 0) { avgPreSys /= countPre; avgPrePulse /= countPre; }
+            if(countPost > 0) { avgPostSys /= countPost; avgPostPulse /= countPost; }
 
             state.charts.vitals = new Chart(ctxVitals, {
                 type: 'bar',
@@ -780,7 +639,7 @@
             data.forEach(d => {
                 if(d.post_diag && d.post_diag.length > 0) {
                     d.post_diag.forEach(diag => {
-                        diagCounts[diag] = (diagCounts[diag] || 0) + 1;
+                        if (diag !== 'ปกติ') diagCounts[diag] = (diagCounts[diag] || 0) + 1;
                     });
                 }
             });
@@ -790,7 +649,7 @@
                 type: 'bar',
                 indexAxis: 'y',
                 data: {
-                    labels: sortedDiags.length ? sortedDiags.map(d => d[0]) : ['ไม่มีข้อมูล'],
+                    labels: sortedDiags.length ? sortedDiags.map(d => d[0]) : ['ไม่มีข้อมูล/ปกติ'],
                     datasets: [{
                         label: 'จำนวนเคส',
                         data: sortedDiags.length ? sortedDiags.map(d => d[1]) : [0],
@@ -801,13 +660,13 @@
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: { x: { beginAtZero: true, grid: { display: false } }, y: { grid: { display: false } } }
+                    scales: { x: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } }, y: { grid: { display: false } } }
                 }
             });
 
-            // 4. Scatter Plot (Only plot if age & bmi are real numbers)
+            // 4. Scatter Plot
             const ctxScatter = document.getElementById('chartScatter').getContext('2d');
-            const validScatter = data.filter(d => d.age !== null && d.bmi !== null && d.age > 0);
+            const validScatter = data.filter(d => d.age !== null && d.bmi !== null);
             
             const scatterDataReady = validScatter.filter(d=>d.status==='Ready').map(d => ({x: d.age, y: d.bmi, _d: d}));
             const scatterDataCond = validScatter.filter(d=>d.status==='Conditional').map(d => ({x: d.age, y: d.bmi, _d: d}));
@@ -848,7 +707,7 @@
             Object.values(state.charts).forEach(chart => chart && chart.destroy());
         };
 
-        //        const renderTable = () => {
+        const renderTable = () => {
             state.search = document.getElementById('searchInput').value;
             state.filterRole = document.getElementById('filterRole').value;
             state.filterStatus = document.getElementById('filterStatus').value;
@@ -868,31 +727,31 @@
                     badgeClass = 'bg-red-100 text-red-800 border-red-200'; badgeIcon = 'x-circle'; badgeText = 'Medical Referral';
                 }
 
-                // การแสดงผลค่าความดันในตาราง (รองรับกรณีเป็นค่าว่าง)
-                let sys = item.pre_sys !== null ? item.pre_sys : (item.post_sys !== null ? item.post_sys : null);
-                let dia = item.pre_dia !== null ? item.pre_dia : (item.post_dia !== null ? item.post_dia : null);
-                let pulse = item.pre_pulse !== null ? item.pre_pulse : (item.post_pulse !== null ? item.post_pulse : null);
-                let vitalsNote = "(ล่าสุด)";
-
+                let sys = item.pre_sys, dia = item.pre_dia, pulse = item.pre_pulse;
+                let vitalsNote = "(Pre)";
                 if(state.phase === 'post') {
                     sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)";
-                } else if (state.phase === 'pre') {
-                    sys = item.pre_sys; dia = item.pre_dia; pulse = item.pre_pulse; vitalsNote = "(Pre)";
+                } else if (state.phase === 'all') {
+                     // For 'all', prioritize latest available
+                     if (item.post_sys !== null) {
+                         sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)";
+                     }
                 }
 
-                const sysStr = sys !== null ? sys : '-';
-                const diaStr = dia !== null ? dia : '-';
-                const pulseStr = pulse !== null ? pulse : '-';
+                const dSys = sys !== null ? sys : '-';
+                const dDia = dia !== null ? dia : '-';
+                const dPulse = pulse !== null ? pulse : '-';
 
-                let bpClass = (sys !== null && sys >= 140) || (dia !== null && dia >= 90) ? 'text-amber-600 font-semibold' : 'text-slate-600';
-                if((sys !== null && sys >= 180) || (dia !== null && dia >= 110)) bpClass = 'text-red-600 font-bold';
+                let bpClass = (sys !== null && (sys >= 140 || dia >= 90)) ? 'text-amber-600 font-semibold' : 'text-slate-600';
+                if(sys !== null && (sys >= 180 || dia >= 110)) bpClass = 'text-red-600 font-bold';
 
                 const ageStr = item.age !== null ? item.age : '-';
                 const bmiStr = item.bmi !== null ? item.bmi : '-';
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition-colors cursor-pointer group";
-                tr.onclick = () => openModal(item.id);
+                // ใช้ key ในการอ้างอิงเพื่อป้องกันคนชื่อซ้ำหรือไม่มี ID
+                tr.onclick = () => openModal(`${item.year}_${item.name}`);
                 
                 tr.innerHTML = `
                     <td class="p-4">
@@ -905,16 +764,16 @@
                     </td>
                     <td class="p-4">
                         <div class="${bpClass} font-inter flex items-baseline gap-1">
-                            ${sysStr}/${diaStr} <span class="text-[10px] text-slate-400">${vitalsNote}</span>
+                            ${dSys}/${dDia} <span class="text-[10px] text-slate-400">${vitalsNote}</span>
                         </div>
                         <div class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                            <i data-lucide="heart" class="w-3 h-3 ${pulseStr !== '-' ? 'text-red-400' : 'text-slate-300'}"></i> ${pulseStr} bpm
+                            <i data-lucide="heart" class="w-3 h-3 ${dPulse !== '-' ? 'text-red-400' : 'text-slate-300'}"></i> ${dPulse} bpm
                         </div>
                     </td>
                     <td class="p-4">
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${item.chosen_role === 'Frontline' ? 'bg-orange-50 text-orange-700' : 'bg-slate-100 text-slate-700'}">
                             <i data-lucide="${item.chosen_role === 'Frontline' ? 'flame' : 'truck'}" class="w-3.5 h-3.5"></i>
-                            ${item.chosen_role === 'Frontline' ? 'แนวหน้าผจญเพลิง' : 'สนับสนุน/ส่งกำลัง'}
+                            ${item.chosen_role === 'Frontline' ? 'แนวหน้า' : 'สนับสนุน'}
                         </span>
                         ${item.mismatch ? '<div class="text-[10px] text-amber-600 mt-1 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> ขัดแย้งผลแพทย์</div>' : ''}
                     </td>
@@ -946,7 +805,7 @@
             renderTable();
         };
 
-        //        const setPhase = (phase) => {
+        const setPhase = (phase) => {
             state.phase = phase;
             ['All', 'Pre', 'Post'].forEach(p => {
                 const btn = document.getElementById(`phase${p}`);
@@ -1032,8 +891,8 @@
             lucide.createIcons();
         };
 
-        const openModal = (id) => {
-            const user = appData.find(d => d.id === id);
+        const openModal = (key) => {
+            const user = appData.find(d => `${d.year}_${d.name}` === key);
             if(!user) return;
 
             const modal = document.getElementById('detailModal');
@@ -1065,8 +924,8 @@
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <div>
                         <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">ข้อมูลทั่วไป</p>
-                        <p class="font-bold text-brand-900 text-lg">${user.name}</p>
-                        <p class="text-sm text-slate-600 font-inter">HN: ${user.id} | อายุ: ${ageStr} | BMI: ${bmiStr}</p>
+                        <p class="font-bold text-brand-900 text-lg">${user.rawName}</p>
+                        <p class="text-sm text-slate-600 font-inter">HN/ID: ${user.id} | อายุ: ${ageStr} | BMI: ${bmiStr}</p>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">ความประสงค์</p>
@@ -1082,7 +941,7 @@
                         <div class="space-y-3">
                             <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                                 <span class="text-sm text-slate-600">ความดันโลหิต</span>
-                                <span class="font-inter font-semibold ${(user.pre_sys && user.pre_sys >= 140) ? 'text-amber-600' : 'text-slate-800'}">${preSysStr}/${preDiaStr} mmHg</span>
+                                <span class="font-inter font-semibold ${(user.pre_sys !== null && user.pre_sys >= 140) ? 'text-amber-600' : 'text-slate-800'}">${preSysStr}/${preDiaStr} mmHg</span>
                             </div>
                             <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                                 <span class="text-sm text-slate-600">อัตราการเต้นหัวใจ</span>
@@ -1097,7 +956,7 @@
                         <div class="space-y-3">
                             <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                                 <span class="text-sm text-slate-600">ความดันโลหิต</span>
-                                <span class="font-inter font-semibold ${(user.post_sys && user.post_sys >= 140) ? 'text-amber-600' : 'text-slate-800'}">${postSysStr}/${postDiaStr} mmHg</span>
+                                <span class="font-inter font-semibold ${(user.post_sys !== null && user.post_sys >= 140) ? 'text-amber-600' : 'text-slate-800'}">${postSysStr}/${postDiaStr} mmHg</span>
                             </div>
                             <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                                 <span class="text-sm text-slate-600">อัตราการเต้นหัวใจ</span>
@@ -1122,22 +981,30 @@
             document.getElementById('detailModal').classList.add('hidden');
         };
 
-        //        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
             
-            // เพิ่ม Loading UI ถ้าต้องการ
-            document.getElementById('lastUpdatedText').innerHTML = 'กำลังดึงข้อมูล...';
+            const overlay = document.getElementById('loadingOverlay');
             
-            appData = await loadGoogleSheetsData();
-            
-            const now = new Date();
-            document.getElementById('lastUpdatedText').innerHTML = `อัปเดตข้อมูลล่าสุด: <span class="font-inter">${now.toLocaleTimeString('th-TH')}</span>`;
-            
-            if(appData && appData.length > 0) {
-                populateYears();
-                updateDashboard();
-            } else {
-                alert("เกิดข้อผิดพลาดในการดึงข้อมูล โปรดตรวจสอบสิทธิ์การแชร์ (Publish to web) ของ Google Sheets");
+            try {
+                appData = await loadGoogleSheetsData();
+                
+                const now = new Date();
+                const lastUpdatedEl = document.getElementById('lastUpdatedText');
+                if(lastUpdatedEl) lastUpdatedEl.innerHTML = `อัปเดตข้อมูลล่าสุด: <span class="font-inter">${now.toLocaleTimeString('th-TH')}</span>`;
+                
+                if(appData && appData.length > 0) {
+                    populateYears();
+                    updateDashboard();
+                } else {
+                    alert("ไม่พบข้อมูล หรือเกิดข้อผิดพลาดในการเชื่อมต่อกับ Google Sheets โปรดตรวจสอบสิทธิ์การแชร์ (Publish to web) ให้เป็น 'ทุกคนที่มีลิงก์'");
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                // Hide overlay
+                overlay.style.opacity = '0';
+                setTimeout(() => { overlay.style.display = 'none'; }, 300);
             }
         });
 
