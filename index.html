@@ -374,16 +374,16 @@
         };
 
         const loadGoogleSheetsData = async () => {
-            const fetchSheet = (sheetName) => {
+            const fetchSheet = (gid) => {
                 return new Promise((resolve) => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+                    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
                     Papa.parse(url, {
                         download: true,
                         header: true,
                         skipEmptyLines: true,
                         complete: (results) => resolve(results.data),
                         error: (error) => {
-                            console.error(`ไม่สามารถดึงชีต ${sheetName}:`, error);
+                            console.error(`ไม่สามารถดึงชีต gid=${gid}:`, error);
                             resolve([]); 
                         }
                     });
@@ -392,9 +392,9 @@
 
             try {
                 const [sheet68Post, sheet69Pre, sheet69Post] = await Promise.all([
-                    fetchSheet('68 หลังภารกิจ'),
-                    fetchSheet('69 ก่อนภารกิจ'),
-                    fetchSheet('69 หลังภารกิจ')
+                    fetchSheet('2028719085'),  // 68 หลังภารกิจ
+                    fetchSheet('440652878'),   // 69 ก่อนภารกิจ
+                    fetchSheet('1290943524')   // 69 หลังภารกิจ
                 ]);
 
                 const mergedUsers = {};
