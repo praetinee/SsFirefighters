@@ -373,10 +373,11 @@
             return s;
         };
 
-        const loadGoogleSheetsData = async () => {
+const loadGoogleSheetsData = async () => {
             const fetchSheet = (gid) => {
                 return new Promise((resolve) => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
+                    // ปรับ URL เป็น export?format=csv เพื่อลดการเกิดบั๊กเวลาอ่านตัวเลขหรือค่าว่าง
+                    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`;
                     Papa.parse(url, {
                         download: true,
                         header: true,
@@ -391,10 +392,9 @@
             };
 
             try {
-                const [sheet68Post, sheet69Pre, sheet69Post] = await Promise.all([
-                    fetchSheet('2028719085'),  // 68 หลังภารกิจ
-                    fetchSheet('440652878'),   // 69 ก่อนภารกิจ
-                    fetchSheet('1290943524')   // 69 หลังภารกิจ
+                // ดึงข้อมูลเฉพาะปี 68 หลังภารกิจ อย่างเดียวก่อน
+                const [sheet68Post] = await Promise.all([
+                    fetchSheet('2028719085') 
                 ]);
 
                 const mergedUsers = {};
@@ -403,27 +403,15 @@
                     if (!data || data.length === 0) return;
                     
                     data.forEach(row => {
-                        const getVal = (keys) => {
-                            for(let k of keys) {
-                                const exact = Object.keys(row).find(key => key.trim() === k);
-                                if(exact && row[exact] !== undefined) {
-                                    const v = row[exact].trim();
-                                    if (v !== '' && v !== '-') return v;
-                                }
-                            }
-                            return null;
-                        };
-
-                        const rawName = getVal(['ชื่อ-สกุล', 'ชื่อ', 'ชื่อ สกุล', 'Name']);
+                        // ใช้ชื่อคอลัมน์ให้ตรงเป๊ะกับชีต 68 หลังภารกิจ
+                        const rawName = row['ชื่อ-สกุล'] ? row['ชื่อ-สกุล'].trim() : null;
                         if (!rawName || rawName === '-') return;
 
                         const name = cleanName(rawName);
                         if (!name) return;
 
-                        let id = getVal(['เลขบัตรประชาชน', 'HN', 'รหัส', 'ID']);
-                        if (!id || id === '-') id = 'ไม่มีระบุ';
-                        
-                        const key = `${year}_${normalizeKey(rawName)}`; // ใช้ชื่อที่ตัดคำนำหน้า/ช่องว่างแล้ว กันคนซ้ำถูกนับเป็นคนละคน
+                        let id = row['เลขบัตรประชาชน'] ? row['เลขบัตรประชาชน'].trim() : 'ไม่มีระบุ';
+                        const key = `${year}_${normalizeKey(rawName)}`;
 
                         if (!mergedUsers[key]) {
                             mergedUsers[key] = {
@@ -431,64 +419,33 @@
                                 name: name,
                                 rawName: rawName,
                                 year: year,
-                                age: null,
-                                bmi: null,
-                                pre_cond: null,
-                                chosen_role: 'Frontline',
+                                age: row['อายุ'] ? parseInt(row['อายุ']) : null,
+                                bmi: row['BMI'] ? parseFloat(row['BMI']) : null,
+                                pre_cond: row['โรคประจำตัว'] ? row['โรคประจำตัว'].trim() : 'ไม่มี',
+                                chosen_role: 'Frontline', // ปี 68 ไม่มีคอลัมน์บอกว่าเลือกภารกิจอะไร ให้ตั้งค่าเริ่มต้นเป็นแนวหน้า
                                 pre_sys: null, pre_dia: null, pre_pulse: null,
-                                post_sys: null, post_dia: null, post_pulse: null,
-                                pre_verdict: null, post_verdict: null,
+                                post_sys: row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null, 
+                                post_dia: row['ความดันตัวล่าง'] ? parseInt(row['ความดันตัวล่าง']) : null, 
+                                post_pulse: row['ชีพจร'] ? parseInt(row['ชีพจร']) : null,
+                                pre_verdict: null, 
+                                post_verdict: row['ผลการตรวจสุขภาพจากแพทย์'] ? row['ผลการตรวจสุขภาพจากแพทย์'].trim() : null,
                                 post_diag: []
                             };
                         }
                         
                         const user = mergedUsers[key];
                         
-                        // Update ID if we found a better one
-                        if (user.id === 'ไม่มีระบุ' && id !== 'ไม่มีระบุ') user.id = id;
-
-                        const ageVal = getVal(['อายุ', 'Age']);
-                        if (ageVal && ageVal !== '-') user.age = parseInt(ageVal) || user.age;
-
-                        const bmiVal = getVal(['BMI', 'ดัชนีมวลกาย']);
-                        if (bmiVal && bmiVal !== '-') user.bmi = parseFloat(bmiVal) || user.bmi;
-
-                        const condVal = getVal(['โรคประจำตัว', 'ประวัติโรค']);
-                        if (condVal && condVal !== '-') user.pre_cond = condVal;
-
-                        const roleVal = getVal(['เข้าร่วมภารกิจ', 'ภารกิจที่เลือก', 'ภารกิจ', 'Role']);
-                        if (roleVal) {
-                            user.chosen_role = (roleVal.toString().includes('สนับสนุน') || roleVal.toString().includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
-                        }
-
-                        const sysVal = getVal(['ความดันตัวบน']);
-                        const diaVal = getVal(['ความดันตัวล่าง']);
-                        const pulseVal = getVal(['ชีพจร']);
-                        const verdictVal = getVal(['ผลการตรวจสุขภาพจากแพทย์', 'ผลการตรวจ']); // คำวินิจฉัย/ข้อสรุปของแพทย์จริงจากชีต
-
-                        if (phase === 'pre') {
-                            if (sysVal && sysVal !== '-') user.pre_sys = parseInt(sysVal);
-                            if (diaVal && diaVal !== '-') user.pre_dia = parseInt(diaVal);
-                            if (pulseVal && pulseVal !== '-') user.pre_pulse = parseInt(pulseVal);
-                            if (verdictVal) user.pre_verdict = verdictVal;
-                        } else {
-                            if (sysVal && sysVal !== '-') user.post_sys = parseInt(sysVal);
-                            if (diaVal && diaVal !== '-') user.post_dia = parseInt(diaVal);
-                            if (pulseVal && pulseVal !== '-') user.post_pulse = parseInt(pulseVal);
-                            if (verdictVal) user.post_verdict = verdictVal;
-                            
-                            const diagStr = getVal(['ความผิดปกติจากการวินิจฉัย', 'อาการหลังภารกิจ', 'อาการ']);
-                            if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
-                                const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
-                                user.post_diag = [...new Set([...user.post_diag, ...diags])];
-                            }
+                        // จัดการอาการผิดปกติหลังภารกิจ
+                        const diagStr = row['ความผิดปกติจากการวินิจฉัย'] ? row['ความผิดปกติจากการวินิจฉัย'].trim() : null;
+                        if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
+                            const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
+                            user.post_diag = [...new Set([...user.post_diag, ...diags])];
                         }
                     });
                 };
 
+                // เรียกใช้ฟังก์ชันประมวลผลสำหรับข้อมูลปี 68
                 mergeData(sheet68Post, '2568', 'post');
-                mergeData(sheet69Pre, '2569', 'pre');
-                mergeData(sheet69Post, '2569', 'post');
 
                 const classifyVerdict = (text) => {
                     if (!text) return null;
@@ -496,26 +453,20 @@
                     if (t.includes('ไม่สามารถ')) return 'Referral';
                     if (t.includes('ควบคุม') || t.includes('ต้องตรวจ') || t.includes('ควรตรวจ') || t.includes('ระวัง') || t.includes('ส่งตรวจ') || t.includes('ข้อจำกัด')) return 'Conditional';
                     if (t.includes('เหมาะสมกับภารกิจ') || t.includes('ทำงานดับไฟป่าได้') || t === 'ปกติ') return 'Ready';
-                    return null; // ข้อความไม่ชัด/ไม่มีข้อมูล ('ข้อมูลไม่ครบ' ฯลฯ) -> ใช้สูตรสำรอง
+                    return null; 
                 };
-                const rank = { Referral: 3, Conditional: 2, Ready: 1 };
 
                 const finalData = Object.values(mergedUsers).map(user => {
-                    // 1) ใช้ผลตรวจจริงจากแพทย์ตามที่บันทึกในชีตก่อนเสมอ (เอาสถานะที่ "หนัก" ที่สุดจากทั้งก่อน/หลังภารกิจ)
-                    const preStat = classifyVerdict(user.pre_verdict);
+                    // ใช้ผลประเมินของหลังภารกิจเป็นหลัก
                     const postStat = classifyVerdict(user.post_verdict);
-                    let verdictStatus = null;
-                    [preStat, postStat].forEach(s => {
-                        if (s && (!verdictStatus || rank[s] > rank[verdictStatus])) verdictStatus = s;
-                    });
-
-                    if (verdictStatus) {
-                        user.status = verdictStatus;
+                    
+                    if (postStat) {
+                        user.status = postStat;
                     } else {
-                        // 2) สำรอง: ใช้เมื่อชีตไม่มีข้อความสรุปผลแพทย์ระบุไว้เลย
+                        // สูตรสำรองหากในชีตไม่ได้เขียนสรุปผลไว้
                         user.status = 'Ready';
-                        const evalSys = user.pre_sys !== null ? user.pre_sys : (user.post_sys !== null ? user.post_sys : 0);
-                        const evalDia = user.pre_dia !== null ? user.pre_dia : (user.post_dia !== null ? user.post_dia : 0);
+                        const evalSys = user.post_sys !== null ? user.post_sys : 0;
+                        const evalDia = user.post_dia !== null ? user.post_dia : 0;
                         const evalAge = user.age || 0;
                         const evalBmi = user.bmi || 0;
 
@@ -534,7 +485,7 @@
                     return user;
                 });
                 
-                // Sort by ID / Name to be consistent
+                // จัดเรียงรายชื่อตามตัวอักษร
                 finalData.sort((a,b) => a.name.localeCompare(b.name, 'th'));
 
                 return finalData;
