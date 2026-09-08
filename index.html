@@ -374,9 +374,9 @@
         };
 
 const loadGoogleSheetsData = async () => {
-            const fetchSheet = (gid) => {
+const fetchSheet = (gid) => {
                 return new Promise((resolve) => {
-                    // ปรับ URL เป็น export?format=csv เพื่อลดการเกิดบั๊กเวลาอ่านตัวเลขหรือค่าว่าง
+                    // ใช้ export?format=csv เพื่อแก้ปัญหาข้อมูลตัวเลขและรหัสบัตรประชาชนอ่านไม่ตรง
                     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`;
                     Papa.parse(url, {
                         download: true,
@@ -392,10 +392,12 @@ const loadGoogleSheetsData = async () => {
             };
 
             try {
-                // ดึงข้อมูลเฉพาะปี 68 หลังภารกิจ อย่างเดียวก่อน
+                // ดึงเฉพาะ 68 หลังภารกิจ ตามเป้าหมายปัจจุบัน (สร้าง array ว่างเผื่อปี 69 ไว้ก่อน)
                 const [sheet68Post] = await Promise.all([
-                    fetchSheet('2028719085') 
+                    fetchSheet('2028719085')  // 68 หลังภารกิจ
                 ]);
+                const sheet69Pre = [];
+                const sheet69Post = [];
 
                 const mergedUsers = {};
 
