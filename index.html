@@ -443,7 +443,7 @@
                     fetchSheet('2028719085'),  // 68 หลังภารกิจ
                     fetchSheet('440652878')    // 69 ก่อนภารกิจ
                 ]);
-                const sheet69Post = []; // สร้างเผื่อไว้สำหรับ 69 หลังภารกิจในอนาคต
+
                 const mergedUsers = {};
 
                 const mergeData = (data, year, phase) => {
@@ -459,7 +459,7 @@
                         let id = row['เลขบัตรประชาชน'] ? row['เลขบัตรประชาชน'].trim() : 'ไม่มีระบุ';
                         const key = `${year}_${normalizeKey(rawName)}`;
 
-                        // 1. โครงสร้างข้อมูลตั้งต้น
+                        // โครงสร้างข้อมูลตั้งต้น
                         if (!mergedUsers[key]) {
                             mergedUsers[key] = {
                                 id: id, name: name, rawName: rawName, year: year, age: null, bmi: null,
@@ -472,20 +472,18 @@
                         
                         const user = mergedUsers[key];
                         
-                        // 2. ข้อมูลพื้นฐาน
+                        // อ่านข้อมูลตามหัวคอลัมน์จริง
                         if (row['อายุ']) user.age = parseInt(row['อายุ']);
                         if (row['BMI']) user.bmi = parseFloat(row['BMI']);
                         if (row['โรคประจำตัว'] && row['โรคประจำตัว'].trim() !== '-') user.pre_cond = row['โรคประจำตัว'].trim();
 
-                        // 3. ภารกิจ (ดึงชื่อเต็มไว้ด้วย)
-                        const roleVal = row['เข้าร่วมภารกิจ'] || row['ภารกิจที่เลือก'] || row['ภารกิจ'] || row['Role'];
+                        const roleVal = row['เข้าร่วมภารกิจ'];
                         if (roleVal && roleVal.trim() !== '-' && roleVal.trim() !== '') {
                             const rStr = roleVal.toString().trim();
                             user.raw_role = rStr;
                             user.chosen_role = (rStr.includes('สนับสนุน') || rStr.includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
                         }
                         
-                        // 4. สุขภาพ
                         const sysVal = row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null;
                         const diaVal = row['ความดันตัวล่าง'] ? parseInt(row['ความดันตัวล่าง']) : null;
                         const pulseVal = row['ชีพจร'] ? parseInt(row['ชีพจร']) : null;
@@ -511,7 +509,7 @@
                     });
                 };
 
-                // เรียกใช้ฟังก์ชันประมวลผลสำหรับข้อมูลแต่ละรอบ
+                // นำข้อมูลเข้าสู่ระบบ
                 mergeData(sheet68Post, '2568', 'post');
                 mergeData(sheet69Pre, '2569', 'pre');
 
@@ -525,14 +523,14 @@
                 };
 
                 const finalData = Object.values(mergedUsers).map(user => {
-                    const postStat = classifyVerdict(user.post_verdict);
+                    const stat = classifyVerdict(user.post_verdict) || classifyVerdict(user.pre_verdict);
                     
-                    if (postStat) {
-                        user.status = postStat;
+                    if (stat) {
+                        user.status = stat;
                     } else {
                         user.status = 'Ready';
-                        const evalSys = user.post_sys !== null ? user.post_sys : 0;
-                        const evalDia = user.post_dia !== null ? user.post_dia : 0;
+                        const evalSys = user.post_sys !== null ? user.post_sys : (user.pre_sys !== null ? user.pre_sys : 0);
+                        const evalDia = user.post_dia !== null ? user.post_dia : (user.pre_dia !== null ? user.pre_dia : 0);
                         const evalAge = user.age || 0;
                         const evalBmi = user.bmi || 0;
 
