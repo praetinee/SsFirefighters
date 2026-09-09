@@ -351,10 +351,10 @@
     <script>
         const SPREADSHEET_ID = '1MaFKIXE8f0qkF4iz-Y1Er6e0k8CmLHwhJLVsDIbIOiI';
         let appData = []; 
-        let isAuthenticated = false; // ตัวแปรสำหรับเช็คว่าล็อกอินหรือยัง (เริ่มต้นคือยังไม่ล็อกอิน)
-        const COMMANDER_PASSWORD = "1234"; // ตั้งรหัสผ่านที่นี่
+        let isAuthenticated = false; // ตัวแปรเช็คการล็อกอิน
+        const COMMANDER_PASSWORD = "1234"; // รหัสผ่าน
 
-        // ฟังก์ชันสำหรับเซ็นเซอร์เลขบัตรประชาชน (โชว์ 2 ตัวหน้า และ 2 ตัวหลัง)
+        // ฟังก์ชันเซ็นเซอร์เลขบัตรประชาชน
         const maskID = (idStr) => {
             if (!idStr || idStr === 'ไม่มีระบุ' || idStr === '-') return idStr;
             const s = idStr.toString().trim();
@@ -379,18 +379,10 @@
             return name.replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|ว่าที่\s*ร\.ต\.|จ\.ส\.อ\.|ส\.อ\.)\s*/g, '').trim();
         };
 
-        // ใช้สำหรับ "จับคู่" คนคนเดียวกันข้ามชีต/ข้ามคำนำหน้าที่สะกดไม่ตรงกัน (เช่น "ว่าที่ ร.ต." / "ว่าที่รต." / "นายว่าที่ รต.")
-        // ไม่กระทบชื่อที่แสดงผลบนหน้าจอ (ยังใช้ cleanName ตามเดิม)
         const normalizeKey = (name) => {
             if (!name) return "";
-            let s = name.replace(/[.\s]/g, ''); // ตัดจุดและช่องว่างทั้งหมดออกเพื่อกันสะกดเพี้ยน
-            const prefixes = [
-                'ว่าที่ร้อยตรี', 'ว่าที่รต',
-                'นางสาว', 'นาย', 'นาง', 'นส',
-                'จ่าสิบเอก', 'จสอ', 'สิบเอก', 'สอ',
-                'อาสาสมัครทหารพราน', 'อสท', 'อาสาสมัคร', 'อส',
-                'ดช', 'ดญ', 'มญ', 'มอ'
-            ];
+            let s = name.replace(/[.\s]/g, ''); 
+            const prefixes = ['ว่าที่ร้อยตรี', 'ว่าที่รต', 'นางสาว', 'นาย', 'นาง', 'นส', 'จ่าสิบเอก', 'จสอ', 'สิบเอก', 'สอ', 'อาสาสมัครทหารพราน', 'อสท', 'อาสาสมัคร', 'อส', 'ดช', 'ดญ', 'มญ', 'มอ'];
             let changed = true;
             while (changed) {
                 changed = false;
@@ -401,29 +393,20 @@
             return s;
         };
 
-const loadGoogleSheetsData = async () => {
-const fetchSheet = (gid) => {
+        const loadGoogleSheetsData = async () => {
+            const fetchSheet = (gid) => {
                 return new Promise((resolve) => {
-                    // ใช้ export?format=csv เพื่อแก้ปัญหาข้อมูลตัวเลขและรหัสบัตรประชาชนอ่านไม่ตรง
                     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`;
                     Papa.parse(url, {
-                        download: true,
-                        header: true,
-                        skipEmptyLines: true,
+                        download: true, header: true, skipEmptyLines: true,
                         complete: (results) => resolve(results.data),
-                        error: (error) => {
-                            console.error(`ไม่สามารถดึงชีต gid=${gid}:`, error);
-                            resolve([]); 
-                        }
+                        error: (error) => { console.error(`ไม่สามารถดึงชีต gid=${gid}:`, error); resolve([]); }
                     });
                 });
             };
 
             try {
-                // ดึงเฉพาะ 68 หลังภารกิจ ตามเป้าหมายปัจจุบัน (สร้าง array ว่างเผื่อปี 69 ไว้ก่อน)
-                const [sheet68Post] = await Promise.all([
-                    fetchSheet('2028719085')  // 68 หลังภารกิจ
-                ]);
+                const [sheet68Post] = await Promise.all([fetchSheet('2028719085')]);
                 const sheet69Pre = [];
                 const sheet69Post = [];
 
@@ -442,47 +425,33 @@ const fetchSheet = (gid) => {
                         let id = row['เลขบัตรประชาชน'] ? row['เลขบัตรประชาชน'].trim() : 'ไม่มีระบุ';
                         const key = `${year}_${normalizeKey(rawName)}`;
 
-                        filteredData.slice(0, 50).forEach((item) => {
-                
-                // ตรรกะใหม่สำหรับ Safety Badge
-                let badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
-                let badgeIcon = 'check-circle';
-                let badgeText = '';
-
-                if (item.status === 'Referral') {
-                    // กรณีไม่ผ่านประเมิน
-                    badgeClass = 'bg-red-50 text-red-700 border-red-200';
-                    badgeIcon = 'x-circle';
-                    badgeText = 'งดปฏิบัติภารกิจ (ส่งต่อแพทย์)';
-                } else {
-                    // กรณีผ่าน หรือ ผ่านแบบมีเงื่อนไข
-                    let approvedRole = item.raw_role;
-                    
-                    // หากแพทย์ประเมินให้ทำได้แค่ Support แต่แรกลง Frontline มา ให้บังคับเป็นหน่วยสนับสนุน
-                    if (item.status === 'Conditional' && item.chosen_role === 'Frontline') {
-                        approvedRole = 'หน่วยสนับสนุน';
-                    }
-
-                    badgeText = `เหมาะกับการเป็น ${approvedRole}`;
-                    
-                    // กำหนดสีตามคีย์เวิร์ดภารกิจ (อิงตามภาพตัวอย่าง)
-                    if (approvedRole.includes('เจ้าหน้าที่')) {
-                        badgeClass = 'bg-red-100 text-red-800 border-red-200';
-                    } else if (approvedRole.includes('อาสาสมัคร')) {
-                        badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
-                    } else if (approvedRole.includes('แนวกันไฟ') || approvedRole.includes('ร่วมทำแนว')) {
-                        badgeClass = 'bg-green-100 text-green-800 border-green-200';
-                    } else if (approvedRole.includes('สนับสนุน') || approvedRole.includes('ส่งกำลัง')) {
-                        badgeClass = 'bg-blue-100 text-blue-800 border-blue-200';
-                    } else {
-                        badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
-                        if(approvedRole === 'ไม่ได้ระบุ') badgeText = 'เหมาะกับการเป็น... (ไม่ได้ระบุ)';
-                    }
-                }
-
-                let sys = item.pre_sys, dia = item.pre_dia, pulse = item.pre_pulse;
+                        // 1. โครงสร้างข้อมูลตั้งต้น
+                        if (!mergedUsers[key]) {
+                            mergedUsers[key] = {
+                                id: id, name: name, rawName: rawName, year: year, age: null, bmi: null,
+                                pre_cond: 'ไม่มี', raw_role: 'ไม่ได้ระบุ', chosen_role: 'None', 
+                                pre_sys: null, pre_dia: null, pre_pulse: null,
+                                post_sys: null, post_dia: null, post_pulse: null,
+                                pre_verdict: null, post_verdict: null, post_diag: []
+                            };
+                        }
                         
-                        // 4. ดึงข้อมูลความดันและชีพจรตาม Phase (ดักไว้รองรับปี 69 ด้วย)
+                        const user = mergedUsers[key];
+                        
+                        // 2. ข้อมูลพื้นฐาน
+                        if (row['อายุ']) user.age = parseInt(row['อายุ']);
+                        if (row['BMI']) user.bmi = parseFloat(row['BMI']);
+                        if (row['โรคประจำตัว'] && row['โรคประจำตัว'].trim() !== '-') user.pre_cond = row['โรคประจำตัว'].trim();
+
+                        // 3. ภารกิจ (ดึงชื่อเต็มไว้ด้วย)
+                        const roleVal = row['เข้าร่วมภารกิจ'] || row['ภารกิจที่เลือก'] || row['ภารกิจ'] || row['Role'];
+                        if (roleVal && roleVal.trim() !== '-' && roleVal.trim() !== '') {
+                            const rStr = roleVal.toString().trim();
+                            user.raw_role = rStr;
+                            user.chosen_role = (rStr.includes('สนับสนุน') || rStr.includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
+                        }
+                        
+                        // 4. สุขภาพ
                         const sysVal = row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null;
                         const diaVal = row['ความดันตัวล่าง'] ? parseInt(row['ความดันตัวล่าง']) : null;
                         const pulseVal = row['ชีพจร'] ? parseInt(row['ชีพจร']) : null;
@@ -499,7 +468,6 @@ const fetchSheet = (gid) => {
                             if (pulseVal !== null) user.post_pulse = pulseVal;
                             if (verdictVal) user.post_verdict = verdictVal;
                             
-                            // จัดการอาการผิดปกติหลังภารกิจ
                             const diagStr = row['ความผิดปกติจากการวินิจฉัย'] ? row['ความผิดปกติจากการวินิจฉัย'].trim() : null;
                             if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
                                 const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
@@ -509,7 +477,6 @@ const fetchSheet = (gid) => {
                     });
                 };
 
-                // เรียกใช้ฟังก์ชันประมวลผลสำหรับข้อมูลปี 68
                 mergeData(sheet68Post, '2568', 'post');
 
                 const classifyVerdict = (text) => {
@@ -522,30 +489,22 @@ const fetchSheet = (gid) => {
                 };
 
                 const finalData = Object.values(mergedUsers).map(user => {
-                    // ใช้ผลประเมินของหลังภารกิจเป็นหลัก
                     const postStat = classifyVerdict(user.post_verdict);
                     
                     if (postStat) {
                         user.status = postStat;
                     } else {
-                        // สูตรสำรองหากในชีตไม่ได้เขียนสรุปผลไว้
                         user.status = 'Ready';
                         const evalSys = user.post_sys !== null ? user.post_sys : 0;
                         const evalDia = user.post_dia !== null ? user.post_dia : 0;
                         const evalAge = user.age || 0;
                         const evalBmi = user.bmi || 0;
 
-                        if (evalSys >= 180 || evalDia >= 110) {
-                            user.status = 'Referral';
-                        } else if ((evalSys > 150) || (evalAge > 60) || (evalBmi > 30) || (user.pre_cond && user.pre_cond !== 'ไม่มี' && user.pre_cond !== '-')) {
-                            user.status = 'Conditional';
-                        }
+                        if (evalSys >= 180 || evalDia >= 110) user.status = 'Referral';
+                        else if ((evalSys > 150) || (evalAge > 60) || (evalBmi > 30) || (user.pre_cond && user.pre_cond !== 'ไม่มี' && user.pre_cond !== '-')) user.status = 'Conditional';
                     }
 
-                    // --- ตรรกะใหม่: อิงผลลัพธ์จากภารกิจที่เลือกลงทะเบียน ---
-                    if (user.status === 'Ready' && user.chosen_role === 'Support') {
-                        user.status = 'Conditional';
-                    }
+                    if (user.status === 'Ready' && user.chosen_role === 'Support') user.status = 'Conditional';
 
                     user.recommended_role = user.status === 'Referral' ? 'Medical' : (user.status === 'Conditional' ? 'Support' : 'Frontline');
                     user.mismatch = (user.chosen_role === 'Frontline' && user.recommended_role !== 'Frontline');
@@ -555,9 +514,7 @@ const fetchSheet = (gid) => {
                     return user;
                 });
                 
-                // จัดเรียงรายชื่อตามตัวอักษร
                 finalData.sort((a,b) => a.name.localeCompare(b.name, 'th'));
-
                 return finalData;
 
             } catch (err) {
@@ -569,26 +526,18 @@ const fetchSheet = (gid) => {
         const populateYears = () => {
             const select = document.getElementById('filterYear');
             const years = [...new Set(appData.map(d => d.year))].sort().reverse();
-            
             select.innerHTML = '<option value="all">รวมทั้งหมด</option>';
             years.forEach(y => {
                 const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = y;
+                opt.value = y; opt.textContent = y;
                 select.appendChild(opt);
             });
-            
-            if (years.includes('2569')) {
-                select.value = '2569';
-                state.year = '2569';
-            }
+            if (years.includes('2569')) { select.value = '2569'; state.year = '2569'; }
         };
 
         const maskName = (fullName) => {
             const parts = fullName.split(' ');
-            if (parts.length > 1) {
-                return `${parts[0]} ${parts[1].charAt(0)}***`;
-            }
+            if (parts.length > 1) return `${parts[0]} ${parts[1].charAt(0)}***`;
             return fullName;
         };
 
@@ -603,7 +552,6 @@ const fetchSheet = (gid) => {
         };
 
         const updateKPIs = (data) => {
-            // 1. กรองเฉพาะคนที่มีข้อมูลการตรวจในรอบนั้นจริงๆ
             let validData = data;
             let phaseText = '';
             
@@ -617,18 +565,14 @@ const fetchSheet = (gid) => {
                 phaseText = 'ภาพรวม';
             }
 
-            // 2. คำนวณยอดจากผู้ที่มีข้อมูลจริง
             const total = validData.length;
             const frontline = validData.filter(d => d.status === 'Ready').length;
             const support = validData.filter(d => d.status === 'Conditional').length;
             const referral = validData.filter(d => d.status === 'Referral').length;
 
-            // 3. ปรับเปลี่ยนข้อความ Label ให้ระบุ ปี และ รอบ
             const yearText = state.year === 'all' ? 'ทุกปี' : `ปี ${state.year}`;
             const labelEl = document.getElementById('kpiTotalLabel');
-            if (labelEl) {
-                labelEl.innerText = `กำลังพลที่ตรวจ (${yearText} ${phaseText})`;
-            }
+            if (labelEl) labelEl.innerText = `กำลังพลที่ตรวจ (${yearText} ${phaseText})`;
 
             document.getElementById('kpiTotal').innerText = total;
             document.getElementById('kpiFrontline').innerText = frontline;
@@ -651,64 +595,42 @@ const fetchSheet = (gid) => {
         const resolveMismatches = () => {
             const currentData = getFilteredData();
             currentData.forEach(d => {
-                if (d.mismatch) {
-                    d.chosen_role = 'Support'; 
-                    d.mismatch = false;
-                }
+                if (d.mismatch) { d.chosen_role = 'Support'; d.mismatch = false; }
             });
             updateDashboard();
             const btn = document.querySelector('#mismatchAlert button');
-            const origText = btn.innerText;
             btn.innerText = "ปรับปรุงข้อมูลสำเร็จ";
             btn.classList.replace('text-amber-700', 'text-emerald-700');
             btn.classList.replace('border-amber-300', 'border-emerald-300');
-            setTimeout(() => {
-                updateDashboard(); 
-            }, 1500);
+            setTimeout(() => { updateDashboard(); }, 1500);
         };
 
         const initOrUpdateCharts = (data) => {
             Chart.defaults.font.family = "'Inter', 'Prompt', sans-serif";
             Chart.defaults.color = '#64748b';
-
             destroyCharts();
 
-            // 1. Fitness Donut Chart
             const ctxFitness = document.getElementById('chartFitness').getContext('2d');
             const counts = { Ready: 0, Conditional: 0, Referral: 0 };
             data.forEach(d => counts[d.status]++);
-            
             state.charts.fitness = new Chart(ctxFitness, {
                 type: 'doughnut',
                 data: {
                     labels: ['พร้อม (แนวหน้า)', 'มีเงื่อนไข (สนับสนุน)', 'งดภารกิจ (ส่งแพทย์)'],
-                    datasets: [{
-                        data: [counts.Ready, counts.Conditional, counts.Referral],
-                        backgroundColor: ['#15803d', '#b45309', '#b91c1c'],
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
+                    datasets: [{ data: [counts.Ready, counts.Conditional, counts.Referral], backgroundColor: ['#15803d', '#b45309', '#b91c1c'], borderWidth: 0, hoverOffset: 4 }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } } }
             });
 
-            // 2. Vitals Bar Chart (Calculate only with valid data)
             const ctxVitals = document.getElementById('chartVitals').getContext('2d');
             let avgPreSys = 0, avgPrePulse = 0, avgPostSys = 0, avgPostPulse = 0;
             let countPre = 0, countPost = 0;
-            
             data.forEach(d => {
                 if(d.pre_sys !== null) { avgPreSys += d.pre_sys; avgPrePulse += d.pre_pulse; countPre++; }
                 if(d.post_sys !== null) { avgPostSys += d.post_sys; avgPostPulse += d.post_pulse; countPost++; }
             });
             if(countPre > 0) { avgPreSys /= countPre; avgPrePulse /= countPre; }
             if(countPost > 0) { avgPostSys /= countPost; avgPostPulse /= countPost; }
-
             state.charts.vitals = new Chart(ctxVitals, {
                 type: 'bar',
                 data: {
@@ -718,52 +640,31 @@ const fetchSheet = (gid) => {
                         { label: 'หลังปฏิบัติภารกิจ', data: [avgPostSys, avgPostPulse], backgroundColor: '#c2410c', borderRadius: 4 }
                     ]
                 },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true } },
-                    plugins: { legend: { position: 'top' } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { position: 'top' } } }
             });
 
-            // 3. Post-Diagnoses Horizontal Bar
             const ctxDiag = document.getElementById('chartDiagnoses').getContext('2d');
             const diagCounts = {};
             data.forEach(d => {
                 if(d.post_diag && d.post_diag.length > 0) {
-                    d.post_diag.forEach(diag => {
-                        if (diag !== 'ปกติ') diagCounts[diag] = (diagCounts[diag] || 0) + 1;
-                    });
+                    d.post_diag.forEach(diag => { if (diag !== 'ปกติ') diagCounts[diag] = (diagCounts[diag] || 0) + 1; });
                 }
             });
             const sortedDiags = Object.entries(diagCounts).sort((a,b) => b[1] - a[1]).slice(0,5);
-
             state.charts.diagnoses = new Chart(ctxDiag, {
-                type: 'bar',
-                indexAxis: 'y',
+                type: 'bar', indexAxis: 'y',
                 data: {
                     labels: sortedDiags.length ? sortedDiags.map(d => d[0]) : ['ไม่มีข้อมูล/ปกติ'],
-                    datasets: [{
-                        label: 'จำนวนเคส',
-                        data: sortedDiags.length ? sortedDiags.map(d => d[1]) : [0],
-                        backgroundColor: '#64748b',
-                        borderRadius: 4
-                    }]
+                    datasets: [{ label: 'จำนวนเคส', data: sortedDiags.length ? sortedDiags.map(d => d[1]) : [0], backgroundColor: '#64748b', borderRadius: 4 }]
                 },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { x: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } }, y: { grid: { display: false } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }
             });
 
-            // 4. Scatter Plot
             const ctxScatter = document.getElementById('chartScatter').getContext('2d');
             const validScatter = data.filter(d => d.age !== null && d.bmi !== null);
-            
             const scatterDataReady = validScatter.filter(d=>d.status==='Ready').map(d => ({x: d.age, y: d.bmi, _d: d}));
             const scatterDataCond = validScatter.filter(d=>d.status==='Conditional').map(d => ({x: d.age, y: d.bmi, _d: d}));
             const scatterDataRef = validScatter.filter(d=>d.status==='Referral').map(d => ({x: d.age, y: d.bmi, _d: d}));
-
             state.charts.scatter = new Chart(ctxScatter, {
                 type: 'scatter',
                 data: {
@@ -775,31 +676,20 @@ const fetchSheet = (gid) => {
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { title: { display: true, text: 'อายุ (ปี)' } },
-                        y: { title: { display: true, text: 'BMI' } }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => {
-                                    const d = ctx.raw._d;
-                                    const sysStr = d.pre_sys !== null ? d.pre_sys : (d.post_sys !== null ? d.post_sys : '-');
-                                    const diaStr = d.pre_dia !== null ? d.pre_dia : (d.post_dia !== null ? d.post_dia : '-');
-                                    return `${d.name} (อายุ: ${d.age}, BMI: ${d.bmi}, BP: ${sysStr}/${diaStr})`;
-                                }
-                            }
-                        }
-                    }
+                    scales: { x: { title: { display: true, text: 'อายุ (ปี)' } }, y: { title: { display: true, text: 'BMI' } } },
+                    plugins: { tooltip: { callbacks: { label: (ctx) => {
+                        const d = ctx.raw._d;
+                        const sysStr = d.pre_sys !== null ? d.pre_sys : (d.post_sys !== null ? d.post_sys : '-');
+                        const diaStr = d.pre_dia !== null ? d.pre_dia : (d.post_dia !== null ? d.post_dia : '-');
+                        return `${d.name} (อายุ: ${d.age}, BMI: ${d.bmi}, BP: ${sysStr}/${diaStr})`;
+                    } } } }
                 }
             });
         };
 
-        const destroyCharts = () => {
-            Object.values(state.charts).forEach(chart => chart && chart.destroy());
-        };
+        const destroyCharts = () => { Object.values(state.charts).forEach(chart => chart && chart.destroy()); };
 
-const renderTable = () => {
+        const renderTable = () => {
             state.search = document.getElementById('searchInput').value;
             state.filterRole = document.getElementById('filterRole').value;
             state.filterStatus = document.getElementById('filterStatus').value;
@@ -808,13 +698,10 @@ const renderTable = () => {
             const tbody = document.getElementById('rosterTableBody');
             tbody.innerHTML = '';
 
-            // ตรวจสอบว่า Phase ที่เลือกมีข้อมูลหรือไม่
             let hasDataForPhase = true;
             if (state.phase === 'pre' && filteredData.length > 0) {
-                // เช็คว่ามีใครสักคนมีข้อมูลก่อนภารกิจหรือไม่
                 hasDataForPhase = filteredData.some(item => item.pre_sys !== null || item.pre_verdict !== null);
             } else if (state.phase === 'post' && filteredData.length > 0) {
-                // เช็คว่ามีใครสักคนมีข้อมูลหลังภารกิจหรือไม่
                 hasDataForPhase = filteredData.some(item => item.post_sys !== null || item.post_verdict !== null || item.post_diag.length > 0);
             }
 
@@ -822,29 +709,44 @@ const renderTable = () => {
                 tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium bg-slate-50">ไม่มีข้อมูล${state.phase === 'pre' ? 'ก่อน' : 'หลัง'}ปฏิบัติภารกิจสำหรับปีงบประมาณนี้</td></tr>`;
                 document.getElementById('tableShowing').innerText = 0;
                 document.getElementById('tableTotal').innerText = 0;
-                return; // หยุดการทำงาน ไม่ต้องเรนเดอร์ข้อมูลต่อ
+                return; 
             }
 
             filteredData.slice(0, 50).forEach((item) => {
                 
-                let badgeClass, badgeIcon, badgeText;
-                if(item.status === 'Ready') {
-                    badgeClass = 'bg-green-100 text-green-800 border-green-200'; badgeIcon = 'check-circle'; badgeText = 'Frontline Fit';
-                } else if (item.status === 'Conditional') {
-                    badgeClass = 'bg-amber-100 text-amber-800 border-amber-200'; badgeIcon = 'alert-circle'; badgeText = 'Support Fit';
+                // ตรรกะ Safety Badge แบบใหม่ตามประเภทภารกิจ
+                let badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
+                let badgeIcon = 'check-circle';
+                let badgeText = '';
+
+                if (item.status === 'Referral') {
+                    badgeClass = 'bg-red-50 text-red-700 border-red-200';
+                    badgeIcon = 'x-circle';
+                    badgeText = 'งดปฏิบัติภารกิจ (ส่งต่อแพทย์)';
                 } else {
-                    badgeClass = 'bg-red-100 text-red-800 border-red-200'; badgeIcon = 'x-circle'; badgeText = 'Medical Referral';
+                    let approvedRole = item.raw_role;
+                    if (item.status === 'Conditional' && item.chosen_role === 'Frontline') {
+                        approvedRole = 'หน่วยสนับสนุน';
+                        badgeIcon = 'alert-circle';
+                    }
+                    badgeText = `เหมาะกับการเป็น ${approvedRole}`;
+                    
+                    if (approvedRole.includes('เจ้าหน้าที่')) badgeClass = 'bg-red-100 text-red-800 border-red-200';
+                    else if (approvedRole.includes('อาสาสมัคร')) badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+                    else if (approvedRole.includes('แนวกันไฟ') || approvedRole.includes('ร่วมทำแนว')) badgeClass = 'bg-green-100 text-green-800 border-green-200';
+                    else if (approvedRole.includes('สนับสนุน') || approvedRole.includes('ส่งกำลัง')) badgeClass = 'bg-blue-100 text-blue-800 border-blue-200';
+                    else {
+                        badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
+                        if(approvedRole === 'ไม่ได้ระบุ') badgeText = 'เหมาะกับการเป็น... (ไม่ได้ระบุ)';
+                    }
                 }
 
                 let sys = item.pre_sys, dia = item.pre_dia, pulse = item.pre_pulse;
                 let vitalsNote = "(Pre)";
                 if(state.phase === 'post') {
                     sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)";
-                } else if (state.phase === 'all') {
-                     // For 'all', prioritize latest available
-                     if (item.post_sys !== null) {
-                         sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)";
-                     }
+                } else if (state.phase === 'all' && item.post_sys !== null) {
+                    sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)";
                 }
 
                 const dSys = sys !== null ? sys : '-';
@@ -859,7 +761,6 @@ const renderTable = () => {
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition-colors cursor-pointer group";
-                // ใช้ key ในการอ้างอิงเพื่อป้องกันคนชื่อซ้ำหรือไม่มี ID
                 tr.onclick = () => openModal(`${item.year}_${item.name}`);
                 
                 tr.innerHTML = `
@@ -906,7 +807,6 @@ const renderTable = () => {
             lucide.createIcons();
         };
 
-        // หากยังไม่ล็อกอิน จะไม่ทำการวาดกราฟและตารางใดๆ (ข้อมูลถูกซ่อนไว้)
         const updateDashboard = () => {
             if (!isAuthenticated) return; 
             state.year = document.getElementById('filterYear').value;
@@ -934,7 +834,6 @@ const renderTable = () => {
         };
 
         const switchView = (viewType) => {
-            // ถ้ากดปุ่ม ผบ. แต่ยังไม่ล็อกอิน ให้โชว์หน้าต่างรหัสผ่าน
             if (viewType === 'commander' && !isAuthenticated) {
                 document.getElementById('loginModal').classList.remove('hidden');
                 document.getElementById('passwordInput').focus();
@@ -959,7 +858,6 @@ const renderTable = () => {
             const input = document.getElementById('passwordInput').value;
             const errorMsg = document.getElementById('passwordError');
             if (input === COMMANDER_PASSWORD) {
-                // รหัสผ่านถูกต้อง: ปลดล็อกระบบและดึงข้อมูลมาโชว์
                 isAuthenticated = true;
                 document.getElementById('loginModal').classList.add('hidden');
                 document.getElementById('passwordInput').value = '';
@@ -971,13 +869,10 @@ const renderTable = () => {
         };
 
         const closeLoginModal = () => {
-            // หากยกเลิกการล็อกอิน ให้สลับกลับไปหน้าอาสาสมัคร
             document.getElementById('loginModal').classList.add('hidden');
             document.getElementById('passwordInput').value = '';
             document.getElementById('passwordError').classList.add('hidden');
-            if (!isAuthenticated) {
-                executeSwitchView('volunteer');
-            }
+            if (!isAuthenticated) executeSwitchView('volunteer');
         };
 
         const populateVolunteerPassport = (user) => {
@@ -1010,29 +905,19 @@ const renderTable = () => {
                 badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-green-200";
                 msgBox.className = "bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm";
                 msgText.innerHTML = `ท่านได้รับการรับรองความพร้อมสำหรับ: <strong class="text-green-900">ทุกภารกิจ รวมถึงภารกิจแนวหน้าผจญเพลิง</strong> เพื่อความปลอดภัยสูงสุด ขอให้ท่านปฏิบัติตามกฎความปลอดภัยอย่างเคร่งครัด`;
-                recList.innerHTML = `
-                    <li class="flex gap-2"><i data-lucide="droplets" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> ดื่มน้ำให้เพียงพอ 3-4 ลิตรต่อวันระหว่างปฏิบัติงาน</li>
-                    <li class="flex gap-2"><i data-lucide="wind" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> สวมหน้ากาก N95 ตลอดเวลาในพื้นที่ควันหนาแน่น</li>
-                `;
+                recList.innerHTML = `<li class="flex gap-2"><i data-lucide="droplets" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> ดื่มน้ำให้เพียงพอ 3-4 ลิตรต่อวันระหว่างปฏิบัติงาน</li><li class="flex gap-2"><i data-lucide="wind" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> สวมหน้ากาก N95 ตลอดเวลาในพื้นที่ควันหนาแน่น</li>`;
             } else if (user.status === 'Conditional') {
                 badgeEl.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i><span class="text-amber-700">เหมาะสมกับงานสนับสนุน</span>`;
                 badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-amber-200";
                 msgBox.className = "bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm";
                 msgText.innerHTML = `ด้วยความห่วงใยในสุขภาพของท่าน แพทย์ประเมินว่าท่านเหมาะสมสำหรับ: <strong class="text-amber-900">ภารกิจสนับสนุนและส่งกำลังบำรุง (งดภารกิจแนวหน้า)</strong> เนื่องจากประเมินจากความดันโลหิตหรือประวัติสุขภาพ`;
-                recList.innerHTML = `
-                    <li class="flex gap-2"><i data-lucide="pill" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> กรุณารับประทานยาประจำตัวตามแพทย์สั่งอย่างเคร่งครัด</li>
-                    <li class="flex gap-2"><i data-lucide="thermometer-sun" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หลีกเลี่ยงการทำงานกลางแดดจัดติดต่อกันเป็นเวลานาน เพื่อป้องกันโรคลมแดด</li>
-                    <li class="flex gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หากมีอาการวิงเวียน หน้ามืด ให้แจ้งหัวหน้าชุดและพักทันที</li>
-                `;
+                recList.innerHTML = `<li class="flex gap-2"><i data-lucide="pill" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> กรุณารับประทานยาประจำตัวตามแพทย์สั่งอย่างเคร่งครัด</li><li class="flex gap-2"><i data-lucide="thermometer-sun" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หลีกเลี่ยงการทำงานกลางแดดจัดติดต่อกันเป็นเวลานาน เพื่อป้องกันโรคลมแดด</li><li class="flex gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หากมีอาการวิงเวียน หน้ามืด ให้แจ้งหัวหน้าชุดและพักทันที</li>`;
             } else {
                 badgeEl.innerHTML = `<i data-lucide="heart-pulse" class="w-4 h-4 text-red-600"></i><span class="text-red-700">ส่งต่อแพทย์ (งดภารกิจ)</span>`;
                 badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-red-200";
                 msgBox.className = "bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm";
                 msgText.innerHTML = `ผลการตรวจร่างกายของท่านอยู่ในเกณฑ์ <strong class="text-red-900">เฝ้าระวัง</strong> ขอให้ท่านงดการปฏิบัติภารกิจภาคสนามทุกประเภทในครั้งนี้ และเข้ารับการตรวจรักษาจากทีมแพทย์ศูนย์ฯ`;
-                recList.innerHTML = `
-                    <li class="flex gap-2"><i data-lucide="stethoscope" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> โปรดติดต่อเต็นท์พยาบาลเพื่อตรวจเช็คสัญญาณชีพซ้ำและรับคำปรึกษา</li>
-                    <li class="flex gap-2"><i data-lucide="bed" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> นอนหลับพักผ่อนให้เพียงพอ และงดเครื่องดื่มชูกำลัง/คาเฟอีน</li>
-                `;
+                recList.innerHTML = `<li class="flex gap-2"><i data-lucide="stethoscope" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> โปรดติดต่อเต็นท์พยาบาลเพื่อตรวจเช็คสัญญาณชีพซ้ำและรับคำปรึกษา</li><li class="flex gap-2"><i data-lucide="bed" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> นอนหลับพักผ่อนให้เพียงพอ และงดเครื่องดื่มชูกำลัง/คาเฟอีน</li>`;
             }
             lucide.createIcons();
         };
@@ -1066,7 +951,6 @@ const renderTable = () => {
 
             content.innerHTML = `
                 ${statusBanner}
-                
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <div>
                         <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">ข้อมูลทั่วไป</p>
@@ -1110,52 +994,42 @@ const renderTable = () => {
                             </div>
                             <div>
                                 <span class="text-sm text-slate-600 block mb-1">อาการเจ็บป่วยหลังภารกิจ:</span>
-                                <div class="flex flex-wrap gap-1">
-                                    ${postDiagHtml}
-                                </div>
+                                <div class="flex flex-wrap gap-1">${postDiagHtml}</div>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
-            
             modal.classList.remove('hidden');
             lucide.createIcons();
         };
 
-        const closeModal = () => {
-            document.getElementById('detailModal').classList.add('hidden');
-        };
+        const closeModal = () => { document.getElementById('detailModal').classList.add('hidden'); };
 
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
-            
             const overlay = document.getElementById('loadingOverlay');
             
             try {
                 appData = await loadGoogleSheetsData();
-                
                 const now = new Date();
                 const lastUpdatedEl = document.getElementById('lastUpdatedText');
                 if(lastUpdatedEl) lastUpdatedEl.innerHTML = `อัปเดตข้อมูลล่าสุด: <span class="font-inter">${now.toLocaleTimeString('th-TH')}</span>`;
                 
                 if(appData && appData.length > 0) {
                     populateYears();
-                    // บังคับให้โชว์ Modal ใส่รหัสผ่านทันทีที่โหลดข้อมูลเสร็จ
                     document.getElementById('loginModal').classList.remove('hidden');
                     document.getElementById('passwordInput').focus();
                 } else {
-                    alert("ไม่พบข้อมูล หรือเกิดข้อผิดพลาดในการเชื่อมต่อกับ Google Sheets โปรดตรวจสอบสิทธิ์การแชร์ (Publish to web) ให้เป็น 'ทุกคนที่มีลิงก์'");
+                    alert("ไม่พบข้อมูล หรือเกิดข้อผิดพลาดในการเชื่อมต่อกับ Google Sheets");
                 }
             } catch (e) {
                 console.error(e);
             } finally {
-                // Hide overlay
                 overlay.style.opacity = '0';
                 setTimeout(() => { overlay.style.display = 'none'; }, 300);
             }
         });
-
     </script>
 </body>
 </html>
