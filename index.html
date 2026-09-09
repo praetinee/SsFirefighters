@@ -476,32 +476,29 @@
 
         const getFilteredData = () => {
             return appData.filter(item => {
-                // 1. ตรวจสอบปีงบประมาณ
+                // 1. กรองปี
                 const matchYear = state.year === 'all' || item.year === state.year;
                 
-                // 2. ตรวจสอบคำค้นหา (ชื่อ, ID, HN)
+                // 2. กรองการค้นหา
                 const matchSearch = state.search === '' || 
                                     item.name.toLowerCase().includes(state.search.toLowerCase()) || 
                                     item.id.toLowerCase().includes(state.search.toLowerCase()) ||
                                     (item.hn && item.hn.toLowerCase().includes(state.search.toLowerCase()));
                 
-                // 3. ตรวจสอบบทบาท (Role) - สำคัญมาก: ให้ผ่านถ้า filterRole เป็น 'all' หรือถ้าไม่มีข้อมูลในชีต
-                const matchRole = state.filterRole === 'all' || item.chosen_role === state.filterRole || item.chosen_role === 'None';
+                // 3. กรองภารกิจ (แก้ตรงนี้ให้ผ่าน 'None' ด้วยถ้าเลือก 'all')
+                const matchRole = state.filterRole === 'all' || item.chosen_role === state.filterRole || (state.filterRole === 'all' && item.chosen_role === 'None');
                 
-                // 4. ตรวจสอบสถานะ (Status)
+                // 4. กรองสถานะ
                 const matchStatus = state.filterStatus === 'all' || item.status === state.filterStatus;
                 
-                // 5. ตรวจสอบ Phase (ก่อน/หลังภารกิจ)
+                // 5. กรอง Phase
                 let matchPhase = true;
                 if (state.phase === 'pre') {
-                    // ให้แสดงรายชื่อหากมีความดัน, ชีพจร หรือ ผลตรวจ 'ก่อนภารกิจ'
                     matchPhase = (item.pre_sys !== null || item.pre_pulse !== null || item.pre_verdict !== null);
                 } else if (state.phase === 'post') {
-                    // ให้แสดงรายชื่อหากมีความดัน, ชีพจร หรือ ผลตรวจ 'หลังภารกิจ'
                     matchPhase = (item.post_sys !== null || item.post_pulse !== null || item.post_verdict !== null);
                 }
 
-                // สรุปผล: ต้องผ่านทุกเงื่อนไขจึงจะนำไปแสดงผล
                 return matchYear && matchSearch && matchRole && matchStatus && matchPhase;
             });
         };
