@@ -932,6 +932,10 @@ const renderTable = () => {
                 document.getElementById('passwordInput').focus();
                 return;
             }
+            executeSwitchView(viewType);
+        };
+
+        const executeSwitchView = (viewType) => {
             state.view = viewType;
             if(viewType === 'volunteer') {
                 document.body.classList.add('mode-volunteer');
@@ -952,61 +956,19 @@ const renderTable = () => {
                 document.getElementById('loginModal').classList.add('hidden');
                 document.getElementById('passwordInput').value = '';
                 errorMsg.classList.add('hidden');
-                switchView('commander');
-            } else {
-                errorMsg.classList.remove('hidden');
-            }
-        };
-
-        const closeLoginModal = () => {
-            document.getElementById('loginModal').classList.add('hidden');
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('passwordError').classList.add('hidden');
-        };
-            // ดักจับการกดปุ่ม "แพทย์/ผบ." ให้เปิดหน้าต่างใส่รหัสผ่าน
-            if (viewType === 'commander') {
-                const modal = document.getElementById('loginModal');
-                modal.classList.remove('hidden');
-                lucide.createIcons();
-                document.getElementById('passwordInput').focus();
-                return; 
-            }
-            // ถ้ากดปุ่ม "อาสาสมัคร" ให้ข้ามไปสลับหน้าได้เลย
-            executeSwitchView(viewType);
-        };
-
-        const verifyPassword = () => {
-            const input = document.getElementById('passwordInput').value;
-            const errorMsg = document.getElementById('passwordError');
-            
-            if (input === COMMANDER_PASSWORD) {
-                // รหัสถูกต้อง: ปิด Modal ล้างค่า และสลับหน้า
-                document.getElementById('loginModal').classList.add('hidden');
-                document.getElementById('passwordInput').value = '';
-                errorMsg.classList.add('hidden');
                 executeSwitchView('commander');
             } else {
-                // รหัสผิด: โชว์ข้อความแจ้งเตือนสีแดง
                 errorMsg.classList.remove('hidden');
             }
         };
 
         const closeLoginModal = () => {
+            // หากยกเลิกการล็อกอิน ให้สลับกลับไปหน้าอาสาสมัคร
             document.getElementById('loginModal').classList.add('hidden');
             document.getElementById('passwordInput').value = '';
             document.getElementById('passwordError').classList.add('hidden');
-        };
-
-        // ฟังก์ชันสลับหน้าเดิมที่แยกออกมาทำงานหลังรหัสผ่านผ่านแล้ว
-        const executeSwitchView = (viewType) => {
-            state.view = viewType;
-            if(viewType === 'volunteer') {
-                document.body.classList.add('mode-volunteer');
-                const user = appData.find(d => d.status === 'Conditional') || appData[0];
-                if(user) populateVolunteerPassport(user);
-            } else {
-                document.body.classList.remove('mode-volunteer');
-                updateDashboard(); 
+            if (!isAuthenticated) {
+                executeSwitchView('volunteer');
             }
         };
 
