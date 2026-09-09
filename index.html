@@ -443,10 +443,11 @@
             };
 
             try {
-                // ดึงข้อมูล 68 หลังภารกิจ และ 69 ก่อนภารกิจ
-                const [sheet68Post, sheet69Pre] = await Promise.all([
+                // ดึงข้อมูล 68 หลังภารกิจ, 69 ก่อนภารกิจ และ 69 หลังภารกิจ
+                const [sheet68Post, sheet69Pre, sheet69Post] = await Promise.all([
                     fetchSheet('2028719085'),  // 68 หลังภารกิจ
-                    fetchSheet('440652878')    // 69 ก่อนภารกิจ
+                    fetchSheet('440652878'),   // 69 ก่อนภารกิจ
+                    fetchSheet('1290943524')   // 69 หลังภารกิจ
                 ]);
 
                 const mergedUsers = {};
@@ -517,6 +518,7 @@
                 // นำข้อมูลเข้าสู่ระบบ
                 mergeData(sheet68Post, '2568', 'post');
                 mergeData(sheet69Pre, '2569', 'pre');
+                mergeData(sheet69Post, '2569', 'post'); // เพิ่มการประมวลผล 69 หลังภารกิจ
 
                 const classifyVerdict = (text) => {
                     if (!text) return null;
