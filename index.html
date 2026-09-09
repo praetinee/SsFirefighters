@@ -5,52 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบริหารจัดการสุขภาพและจัดสรรกำลังพลอาสาสมัครดับไฟป่า</title>
     
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Prompt', 'sans-serif'],
-                        inter: ['Inter', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Prompt', 'sans-serif'], inter: ['Inter', 'sans-serif'] },
                     colors: {
-                        brand: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9',
-                            500: '#64748b',
-                            800: '#1e293b',
-                            900: '#0f172a',
-                        },
-                        accent: {
-                            500: '#f97316',
-                            700: '#c2410c',
-                        },
-                        status: {
-                            ready: '#15803d',
-                            conditional: '#b45309',
-                            referral: '#b91c1c',
-                        }
+                        brand: { 50: '#f8fafc', 100: '#f1f5f9', 500: '#64748b', 800: '#1e293b', 900: '#0f172a' },
+                        accent: { 500: '#f97316', 700: '#c2410c' },
+                        status: { ready: '#15803d', conditional: '#b45309', referral: '#b91c1c' }
                     }
                 }
             }
         }
     </script>
-
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- PapaParse สำหรับอ่าน Google Sheets CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
@@ -71,13 +46,11 @@
 </head>
 <body class="antialiased min-h-screen flex flex-col relative">
 
-    <!-- Loading Screen -->
     <div id="loadingOverlay" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
         <i data-lucide="loader-2" class="w-10 h-10 text-brand-900 animate-spin mb-4"></i>
         <p class="text-brand-900 font-medium">กำลังโหลดและผสานข้อมูลจาก Google Sheets...</p>
     </div>
 
-    <!-- Header -->
     <header class="bg-brand-900 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -117,14 +90,11 @@
                         <button id="phaseAll" class="px-3 py-1 rounded-sm bg-brand-500/20 text-white transition-colors" onclick="setPhase('all')">ภาพรวม</button>
                     </div>
                 </div>
-                <div class="text-sm text-brand-100 hidden lg:block" id="lastUpdatedText">
-                    อัปเดตข้อมูลล่าสุด: กำลังดึงข้อมูล...
-                </div>
+                <div class="text-sm text-brand-100 hidden lg:block" id="lastUpdatedText">อัปเดตข้อมูลล่าสุด: กำลังดึงข้อมูล...</div>
             </div>
         </div>
     </header>
 
-    <!-- Commander View -->
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full view-commander">
         <div id="mismatchAlert" class="hidden mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-card fade-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-start gap-3">
@@ -244,8 +214,7 @@
                             <th class="p-4 font-medium text-center">จัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="rosterTableBody" class="divide-y divide-slate-100 text-sm">
-                    </tbody>
+                    <tbody id="rosterTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
                 </table>
             </div>
             <div class="p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
@@ -254,14 +223,12 @@
         </div>
     </main>
 
-    <!-- Volunteer View -->
     <main class="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-8 w-full view-volunteer">
         <div class="text-center mb-8 fade-in">
             <h2 class="text-2xl font-bold text-brand-900 mb-2">Personal Health Passport</h2>
             <p class="text-slate-500">สมุดพกสุขภาพอาสาสมัครดับไฟป่า</p>
         </div>
         
-        <!-- กล่องค้นหาข้อมูลอาสาสมัคร -->
         <div class="max-w-md mx-auto mb-6 fade-in relative">
             <div class="relative flex items-center">
                 <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3"></i>
@@ -319,7 +286,6 @@
             <div class="bg-slate-50 p-4 border-t border-slate-100 text-center text-xs text-slate-400">ข้อมูลอัปเดตล่าสุดจากการตรวจ</div>
         </div>
 
-        <!-- ส่วน Dashboard ย้อนหลังรายบุคคล -->
         <div id="volunteerHistorySection" class="mt-6 bg-white rounded-2xl shadow-soft p-6 border border-slate-100 fade-in hidden">
             <h3 class="text-lg font-bold text-brand-900 mb-4 flex items-center gap-2">
                 <i data-lucide="history" class="w-5 h-5 text-brand-500"></i> ประวัติสุขภาพและภารกิจย้อนหลัง
@@ -395,7 +361,7 @@
         const SPREADSHEET_ID = '1MaFKIXE8f0qkF4iz-Y1Er6e0k8CmLHwhJLVsDIbIOiI';
         let appData = []; 
         let isAuthenticated = false; 
-        const COMMANDER_PASSWORD = "0000";
+        const COMMANDER_PASSWORD = "1234";
 
         const maskID = (idStr) => {
             if (!idStr || idStr === 'ไม่มีระบุ' || idStr === '-') return idStr;
@@ -439,23 +405,159 @@
             return s;
         };
 
-        const getFilteredData = () => {
-            return appData.filter(item => {
-                const matchYear = state.year === 'all' || item.year === state.year;
-                const matchSearch = item.name.toLowerCase().includes(state.search.toLowerCase()) || item.id.toLowerCase().includes(state.search.toLowerCase());
-                const matchRole = state.filterRole === 'all' || item.chosen_role === state.filterRole;
-                const matchStatus = state.filterStatus === 'all' || item.status === state.filterStatus;
+        const loadGoogleSheetsData = async () => {
+            const fetchSheet = (gid) => {
+                return new Promise((resolve) => {
+                    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`;
+                    Papa.parse(url, {
+                        download: true, 
+                        header: true, 
+                        skipEmptyLines: true,
+                        complete: (results) => resolve(results.data),
+                        error: (error) => { console.error(`Error gid=${gid}:`, error); resolve([]); }
+                    });
+                });
+            };
+
+            try {
+                // ดึงข้อมูลทั้ง 3 ชีต
+                const [sheet68Post, sheet69Pre, sheet69Post] = await Promise.all([
+                    fetchSheet('2028719085'), // 68 หลัง
+                    fetchSheet('440652878'),  // 69 ก่อน
+                    fetchSheet('1290943524')  // 69 หลัง
+                ]);
+
+                const mergedUsers = {};
+
+                const mergeData = (data, year, phase) => {
+                    if (!data || data.length === 0) return;
+                    data.forEach(row => {
+                        const getVal = (keys) => {
+                            for(let k of keys) {
+                                const exact = Object.keys(row).find(key => key.trim() === k);
+                                if(exact && row[exact] !== undefined && row[exact] !== null) {
+                                    const v = row[exact].toString().trim();
+                                    if (v !== '' && v !== '-') return v;
+                                }
+                            }
+                            return null;
+                        };
+
+                        const rawName = getVal(['ชื่อ-สกุล', 'ชื่อ', 'ชื่อ สกุล']);
+                        if (!rawName) return;
+                        
+                        const name = cleanName(rawName);
+                        if (!name) return;
+                        
+                        const id = getVal(['เลขบัตรประชาชน', 'ID']) || 'ไม่มีระบุ';
+                        const hnVal = getVal(['HN']);
+                        const key = `${year}_${normalizeKey(rawName)}`;
+
+                        if (!mergedUsers[key]) {
+                            mergedUsers[key] = {
+                                id: id, hn: hnVal, name: name, rawName: rawName, year: year, age: null, bmi: null,
+                                pre_cond: 'ไม่มี', raw_role: 'ไม่ได้ระบุ', chosen_role: 'None', 
+                                pre_sys: null, pre_dia: null, pre_pulse: null,
+                                post_sys: null, post_dia: null, post_pulse: null,
+                                pre_verdict: null, post_verdict: null, post_diag: []
+                            };
+                        }
+                        
+                        const user = mergedUsers[key];
+                        
+                        if (!user.hn && hnVal) user.hn = hnVal;
+                        
+                        const ageVal = getVal(['อายุ']);
+                        if (ageVal) user.age = parseInt(ageVal);
+                        
+                        const bmiVal = getVal(['BMI']);
+                        if (bmiVal) user.bmi = parseFloat(bmiVal);
+                        
+                        const condVal = getVal(['โรคประจำตัว']);
+                        if (condVal) user.pre_cond = condVal;
+
+                        const roleVal = getVal(['เข้าร่วมภารกิจ', 'ภารกิจที่เลือก', 'ภารกิจ', 'Role']);
+                        if (roleVal) {
+                            user.raw_role = roleVal;
+                            user.chosen_role = (roleVal.includes('สนับสนุน') || roleVal.includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
+                        }
+                        
+                        const sysVal = getVal(['ความดันตัวบน']);
+                        const diaVal = getVal(['ความดันตัวล่าง']);
+                        const pulseVal = getVal(['ชีพจร']);
+                        const verdictVal = getVal(['ผลการตรวจสุขภาพจากแพทย์']);
+
+                        if (phase === 'pre') {
+                            if (sysVal !== null) user.pre_sys = parseInt(sysVal);
+                            if (diaVal !== null) user.pre_dia = parseInt(diaVal);
+                            if (pulseVal !== null) user.pre_pulse = parseInt(pulseVal);
+                            if (verdictVal) user.pre_verdict = verdictVal;
+                        } else if (phase === 'post') {
+                            if (sysVal !== null) user.post_sys = parseInt(sysVal);
+                            if (diaVal !== null) user.post_dia = parseInt(diaVal);
+                            if (pulseVal !== null) user.post_pulse = parseInt(pulseVal);
+                            if (verdictVal) user.post_verdict = verdictVal;
+                            
+                            const diagStr = getVal(['ความผิดปกติจากการวินิจฉัย']);
+                            if (diagStr && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
+                                const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
+                                user.post_diag = [...new Set([...user.post_diag, ...diags])];
+                            }
+                        }
+                    });
+                };
+
+                mergeData(sheet68Post, '2568', 'post');
+                mergeData(sheet69Pre, '2569', 'pre');
+                mergeData(sheet69Post, '2569', 'post');
+
+                const classifyVerdict = (text) => {
+                    if (!text) return null;
+                    const t = text.toString();
+                    if (t.includes('ไม่สามารถ')) return 'Referral';
+                    if (t.includes('ควบคุม') || t.includes('ต้องตรวจ') || t.includes('ควรตรวจ') || t.includes('ระวัง') || t.includes('ส่งตรวจ') || t.includes('ข้อจำกัด')) return 'Conditional';
+                    if (t.includes('เหมาะสมกับภารกิจ') || t.includes('ทำงานดับไฟป่าได้') || t === 'ปกติ') return 'Ready';
+                    return null; 
+                };
+
+                const finalData = Object.values(mergedUsers).map(user => {
+                    const stat = classifyVerdict(user.post_verdict) || classifyVerdict(user.pre_verdict);
+                    
+                    if (stat) {
+                        user.status = stat;
+                    } else {
+                        user.status = 'Ready';
+                        const evalSys = user.post_sys !== null ? user.post_sys : (user.pre_sys !== null ? user.pre_sys : 0);
+                        const evalDia = user.post_dia !== null ? user.post_dia : (user.pre_dia !== null ? user.pre_dia : 0);
+                        const evalAge = user.age || 0;
+                        const evalBmi = user.bmi || 0;
+                        
+                        if (evalSys >= 180 || evalDia >= 110) {
+                            user.status = 'Referral';
+                        } else if ((evalSys > 150) || (evalAge > 60) || (evalBmi > 30) || (user.pre_cond && user.pre_cond !== 'ไม่มี' && user.pre_cond !== '-')) {
+                            user.status = 'Conditional';
+                        }
+                    }
+
+                    if (user.status === 'Ready' && user.chosen_role === 'Support') {
+                        user.status = 'Conditional';
+                    }
+                    
+                    user.recommended_role = user.status === 'Referral' ? 'Medical' : (user.status === 'Conditional' ? 'Support' : 'Frontline');
+                    user.mismatch = (user.chosen_role === 'Frontline' && user.recommended_role !== 'Frontline');
+                    if (!user.pre_cond || user.pre_cond === '-') user.pre_cond = 'ไม่มี';
+                    if (user.post_diag.length === 0) user.post_diag = ['ปกติ'];
+                    
+                    return user;
+                });
                 
-                // ตรวจสอบ Phase ตามที่เลือกบนเมนู
-                let matchPhase = true;
-                if (state.phase === 'pre') {
-                    matchPhase = (item.year === '2569' && (item.pre_sys !== null || item.pre_verdict !== null));
-                } else if (state.phase === 'post') {
-                    matchPhase = (item.post_sys !== null || item.post_verdict !== null || (item.post_diag && item.post_diag.length > 0 && item.post_diag[0] !== 'ปกติ'));
-                }
-                
-                return matchYear && matchSearch && matchRole && matchStatus && matchPhase;
-            });
+                finalData.sort((a,b) => a.name.localeCompare(b.name, 'th'));
+                return finalData;
+
+            } catch (err) { 
+                console.error("Error:", err); 
+                return []; 
+            }
         };
 
         const populateYears = () => {
@@ -476,27 +578,21 @@
 
         const getFilteredData = () => {
             return appData.filter(item => {
-                // 1. กรองปี
                 const matchYear = state.year === 'all' || item.year === state.year;
                 
-                // 2. กรองการค้นหา
-                const matchSearch = state.search === '' || 
-                                    item.name.toLowerCase().includes(state.search.toLowerCase()) || 
-                                    item.id.toLowerCase().includes(state.search.toLowerCase()) ||
-                                    (item.hn && item.hn.toLowerCase().includes(state.search.toLowerCase()));
-                
-                // 3. กรองภารกิจ (แก้ตรงนี้ให้ผ่าน 'None' ด้วยถ้าเลือก 'all')
-                const matchRole = state.filterRole === 'all' || item.chosen_role === state.filterRole || (state.filterRole === 'all' && item.chosen_role === 'None');
-                
-                // 4. กรองสถานะ
+                const searchLower = state.search.toLowerCase();
+                const matchSearch = (item.name || '').toLowerCase().includes(searchLower) || 
+                                    (item.id || '').toString().toLowerCase().includes(searchLower) ||
+                                    ((item.hn || '').toString().toLowerCase().includes(searchLower));
+                                    
+                const matchRole = state.filterRole === 'all' || item.chosen_role === state.filterRole;
                 const matchStatus = state.filterStatus === 'all' || item.status === state.filterStatus;
                 
-                // 5. กรอง Phase
                 let matchPhase = true;
                 if (state.phase === 'pre') {
-                    matchPhase = (item.pre_sys !== null || item.pre_pulse !== null || item.pre_verdict !== null);
+                    matchPhase = (item.pre_sys !== null || item.pre_verdict !== null);
                 } else if (state.phase === 'post') {
-                    matchPhase = (item.post_sys !== null || item.post_pulse !== null || item.post_verdict !== null);
+                    matchPhase = (item.post_sys !== null || item.post_verdict !== null || (item.post_diag && item.post_diag.length > 0 && item.post_diag[0] !== 'ปกติ'));
                 }
 
                 return matchYear && matchSearch && matchRole && matchStatus && matchPhase;
@@ -650,15 +746,8 @@
             const tbody = document.getElementById('rosterTableBody');
             tbody.innerHTML = '';
 
-            let hasDataForPhase = true;
-            if (state.phase === 'pre' && filteredData.length > 0) {
-                hasDataForPhase = filteredData.some(item => item.pre_sys !== null || item.pre_verdict !== null);
-            } else if (state.phase === 'post' && filteredData.length > 0) {
-                hasDataForPhase = filteredData.some(item => item.post_sys !== null || item.post_verdict !== null || item.post_diag.length > 0);
-            }
-
-            if (!hasDataForPhase) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium bg-slate-50">ไม่มีข้อมูล${state.phase === 'pre' ? 'ก่อน' : 'หลัง'}ปฏิบัติภารกิจสำหรับปีงบประมาณนี้</td></tr>`;
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium bg-slate-50">ไม่มีข้อมูลตามเงื่อนไขที่ค้นหา หรือยังไม่มีบันทึกการตรวจในรอบนี้</td></tr>`;
                 document.getElementById('tableShowing').innerText = 0; 
                 document.getElementById('tableTotal').innerText = 0;
                 return; 
@@ -823,7 +912,6 @@
             document.getElementById('loginModal').classList.add('hidden'); 
             document.getElementById('passwordInput').value = ''; 
             document.getElementById('passwordError').classList.add('hidden');
-            if (!isAuthenticated) executeSwitchView('volunteer');
         };
 
         const populateVolunteerPassport = (user) => {
