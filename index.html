@@ -604,10 +604,13 @@
                 
                 let matchPhase = true;
                 if (state.phase === 'pre') {
-                    matchPhase = (item.pre_sys !== null || item.pre_verdict !== null);
+                    // ตรวจสอบว่ามีข้อมูลการตรวจก่อนภารกิจ
+                    matchPhase = (item.pre_sys !== null || item.pre_pulse !== null || item.pre_verdict !== null);
                 } else if (state.phase === 'post') {
-                    matchPhase = (item.post_sys !== null || item.post_verdict !== null || (item.post_diag && item.post_diag.length > 0 && item.post_diag[0] !== 'ปกติ'));
+                    // ตรวจสอบว่ามีข้อมูลการตรวจหลังภารกิจ
+                    matchPhase = (item.post_sys !== null || item.post_pulse !== null || item.post_verdict !== null);
                 }
+                // ถ้า phase === 'all' matchPhase จะเป็น true เสมอ
 
                 return matchYear && matchSearch && matchRole && matchStatus && matchPhase;
             });
