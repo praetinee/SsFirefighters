@@ -495,7 +495,13 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                         const sysVal = row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null;
                         const diaVal = row['ความดันตัวล่าง'] ? parseInt(row['ความดันตัวล่าง']) : null;
                         const pulseVal = row['ชีพจร'] ? parseInt(row['ชีพจร']) : null;
-                        const verdictVal = row['ผลการตรวจสุขภาพจากแพทย์'] ? row['ผลการตรวจสุขภาพจากแพทย์'].trim() : null;
+                        const verdictVal = row['สุขภาพเหมาะสม หรือมีอะไรผิดปกติ'] ? row['สุขภาพเหมาะสม หรือมีอะไรผิดปกติ'].trim() : null;
+                        const diagStr = row['รายละเอียดความผิดปกติ'] ? row['รายละเอียดความผิดปกติ'].trim() : null;
+
+                        if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
+                            const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
+                            user.post_diag = [...new Set([...user.post_diag, ...diags])];
+                        }
 
                         if (phase === 'pre') {
                             if (sysVal !== null) user.pre_sys = sysVal;
@@ -507,12 +513,6 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                             if (diaVal !== null) user.post_dia = diaVal;
                             if (pulseVal !== null) user.post_pulse = pulseVal;
                             if (verdictVal) user.post_verdict = verdictVal;
-                            
-                            const diagStr = row['ความผิดปกติจากการวินิจฉัย'] ? row['ความผิดปกติจากการวินิจฉัย'].trim() : null;
-                            if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
-                                const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
-                                user.post_diag = [...new Set([...user.post_diag, ...diags])];
-                            }
                         }
                     });
                 };
@@ -736,31 +736,23 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
 
             filteredData.slice(0, 50).forEach((item) => {
                 
-                // ตรรกะ Safety Badge แบบใหม่ตามประเภทภารกิจ
+                // แสดงผลจากคำวินิจฉัยของแพทย์โดยตรง (Col V และ W)
                 let badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
                 let badgeIcon = 'check-circle';
-                let badgeText = '';
+                
+                let actualVerdict = item.post_verdict || item.pre_verdict || 'รอประเมิน';
+                let actualDiag = (item.post_diag && item.post_diag.length > 0 && item.post_diag[0] !== 'ปกติ') ? ` (${item.post_diag.join(', ')})` : '';
+                let badgeText = `${actualVerdict}${actualDiag}`;
 
-                if (item.status === 'Referral') {
+                if (item.status === 'Referral' || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('งด') || actualVerdict.includes('ส่งต่อ')) {
                     badgeClass = 'bg-red-50 text-red-700 border-red-200';
                     badgeIcon = 'x-circle';
-                    badgeText = 'งดปฏิบัติภารกิจ (ส่งต่อแพทย์)';
+                } else if (item.status === 'Conditional' || actualVerdict.includes('เฝ้าระวัง') || actualVerdict.includes('ระวัง') || actualVerdict.includes('ควร')) {
+                    badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                    badgeIcon = 'alert-circle';
                 } else {
-                    let approvedRole = item.raw_role;
-                    if (item.status === 'Conditional' && item.chosen_role === 'Frontline') {
-                        approvedRole = 'หน่วยสนับสนุน';
-                        badgeIcon = 'alert-circle';
-                    }
-                    badgeText = `เหมาะกับการเป็น ${approvedRole}`;
-                    
-                    if (approvedRole.includes('เจ้าหน้าที่')) badgeClass = 'bg-red-100 text-red-800 border-red-200';
-                    else if (approvedRole.includes('อาสาสมัคร')) badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
-                    else if (approvedRole.includes('แนวกันไฟ') || approvedRole.includes('ร่วมทำแนว')) badgeClass = 'bg-green-100 text-green-800 border-green-200';
-                    else if (approvedRole.includes('สนับสนุน') || approvedRole.includes('ส่งกำลัง')) badgeClass = 'bg-blue-100 text-blue-800 border-blue-200';
-                    else {
-                        badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
-                        if(approvedRole === 'ไม่ได้ระบุ') badgeText = 'เหมาะกับการเป็น... (ไม่ได้ระบุ)';
-                    }
+                    badgeClass = 'bg-green-50 text-green-700 border-green-200';
+                    badgeIcon = 'check-circle';
                 }
 
                 let sys = item.pre_sys, dia = item.pre_dia, pulse = item.pre_pulse;
