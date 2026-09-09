@@ -27,16 +27,16 @@
                             100: '#f1f5f9',
                             500: '#64748b',
                             800: '#1e293b',
-                            900: '#0f172a', // Deep Slate
+                            900: '#0f172a',
                         },
                         accent: {
                             500: '#f97316',
-                            700: '#c2410c', // Terracotta
+                            700: '#c2410c',
                         },
                         status: {
-                            ready: '#15803d', // Emerald
-                            conditional: '#b45309', // Amber
-                            referral: '#b91c1c', // Crimson
+                            ready: '#15803d',
+                            conditional: '#b45309',
+                            referral: '#b91c1c',
                         }
                     }
                 }
@@ -77,6 +77,7 @@
         <p class="text-brand-900 font-medium">กำลังโหลดและผสานข้อมูลจาก Google Sheets...</p>
     </div>
 
+    <!-- Header -->
     <header class="bg-brand-900 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -123,6 +124,7 @@
         </div>
     </header>
 
+    <!-- Commander View -->
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full view-commander">
         <div id="mismatchAlert" class="hidden mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-card fade-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-start gap-3">
@@ -195,7 +197,7 @@
                     <h3 class="text-base font-semibold text-brand-900 flex items-center gap-2">
                         <i data-lucide="stethoscope" class="w-5 h-5 text-brand-500"></i> ความผิดปกติหลังจบภารกิจ (Top 5)
                     </h3>
-                    <span class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">ข้อมูลเฉพาะ Post-mission</span>
+                    <span class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">เฉพาะ Post-mission</span>
                 </div>
                 <div class="relative h-64 w-full"><canvas id="chartDiagnoses"></canvas></div>
             </div>
@@ -215,7 +217,7 @@
                 <div class="flex flex-wrap items-center gap-3">
                     <div class="relative">
                         <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                        <input type="text" id="searchInput" placeholder="ค้นหาชื่อ, รหัส..." class="pl-9 pr-4 py-2 border border-slate-300 rounded-md text-sm focus:ring-accent-500 focus:border-accent-500 w-full sm:w-64" onkeyup="renderTable()">
+                        <input type="text" id="searchInput" placeholder="ค้นหาชื่อ, รหัส, HN..." class="pl-9 pr-4 py-2 border border-slate-300 rounded-md text-sm focus:ring-accent-500 focus:border-accent-500 w-full sm:w-64" onkeyup="renderTable()">
                     </div>
                     <select id="filterRole" class="border border-slate-300 rounded-md text-sm py-2 px-3 focus:ring-accent-500 focus:border-accent-500" onchange="renderTable()">
                         <option value="all">ทุกภารกิจ</option>
@@ -224,9 +226,9 @@
                     </select>
                     <select id="filterStatus" class="border border-slate-300 rounded-md text-sm py-2 px-3 focus:ring-accent-500 focus:border-accent-500" onchange="renderTable()">
                         <option value="all">ทุกสถานะความพร้อม</option>
-                        <option value="Ready">พร้อมลุย (Frontline Fit)</option>
-                        <option value="Conditional">มีเงื่อนไข (Support Fit)</option>
-                        <option value="Referral">ส่งต่อแพทย์ (Unfit)</option>
+                        <option value="Ready">ผ่านเกณฑ์</option>
+                        <option value="Conditional">มีเงื่อนไข</option>
+                        <option value="Referral">ส่งต่อแพทย์</option>
                     </select>
                 </div>
             </div>
@@ -252,6 +254,7 @@
         </div>
     </main>
 
+    <!-- Volunteer View -->
     <main class="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-8 w-full view-volunteer">
         <div class="text-center mb-8 fade-in">
             <h2 class="text-2xl font-bold text-brand-900 mb-2">Personal Health Passport</h2>
@@ -268,7 +271,7 @@
             <p class="text-xs text-slate-400 mt-2 text-center">พิมพ์คำค้นหาแล้วกด Enter หรือคลิกเลือกจากรายการ</p>
         </div>
 
-        <div id="passportCard" class="bg-white rounded-2xl shadow-soft overflow-hidden border border-slate-100 fade-in">
+        <div id="passportCard" class="bg-white rounded-2xl shadow-soft overflow-hidden border border-slate-100 fade-in hidden">
             <div class="h-24 bg-gradient-to-r from-brand-900 to-brand-700 relative">
                 <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,#fff_1px,transparent_0)] [background-size:16px_16px]"></div>
                 <div class="absolute -bottom-10 left-6">
@@ -286,7 +289,7 @@
                     </div>
                 </div>
                 <div id="vp-message-box" class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm">
-                    <p id="vp-message" class="text-green-800"></p>
+                    <div id="vp-message" class="text-green-800"></div>
                 </div>
                 <h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">ผลตรวจร่างกายล่าสุด</h4>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -313,7 +316,7 @@
                 <h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">คำแนะนำจากแพทย์</h4>
                 <ul id="vp-recommendations" class="space-y-2 text-sm text-slate-600"></ul>
             </div>
-            <div class="bg-slate-50 p-4 border-t border-slate-100 text-center text-xs text-slate-400">ข้อมูลอัปเดตล่าสุดจากการตรวจก่อนปฏิบัติภารกิจ</div>
+            <div class="bg-slate-50 p-4 border-t border-slate-100 text-center text-xs text-slate-400">ข้อมูลอัปเดตล่าสุดจากการตรวจ</div>
         </div>
 
         <!-- ส่วน Dashboard ย้อนหลังรายบุคคล -->
@@ -353,12 +356,13 @@
             </button>
         </div>
     </main>
-<!-- Login Modal -->
+
+    <!-- Login Modal -->
     <div id="loginModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeLoginModal()"></div>
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 relative z-10 transform transition-all">
             <h2 class="text-lg font-bold text-brand-900 mb-2 flex items-center gap-2">
-                <i data-lucide="lock" class="w-5 h-5 text-brand-500"></i> ยืนยันตัวตน (แพทย์/ผบ.)
+                <i data-lucide="lock" class="w-5 h-5 text-brand-500"></i> ยืนยันตัวตน
             </h2>
             <p class="text-sm text-slate-500 mb-4">กรุณาใส่รหัสผ่านเพื่อเข้าสู่ระบบบริหารจัดการ</p>
             <input type="password" id="passwordInput" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-accent-500 focus:border-accent-500 mb-2" placeholder="รหัสผ่าน..." onkeypress="if(event.key === 'Enter') verifyPassword()">
@@ -369,6 +373,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Detail Modal -->
     <div id="detailModal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-slate-900/40 modal-backdrop" onclick="closeModal()"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
@@ -388,10 +394,9 @@
     <script>
         const SPREADSHEET_ID = '1MaFKIXE8f0qkF4iz-Y1Er6e0k8CmLHwhJLVsDIbIOiI';
         let appData = []; 
-        let isAuthenticated = false; // ตัวแปรเช็คการล็อกอิน
-        const COMMANDER_PASSWORD = "1234"; // รหัสผ่าน
+        let isAuthenticated = false; 
+        const COMMANDER_PASSWORD = "1234";
 
-        // ฟังก์ชันเซ็นเซอร์เลขบัตรประชาชน
         const maskID = (idStr) => {
             if (!idStr || idStr === 'ไม่มีระบุ' || idStr === '-') return idStr;
             const s = idStr.toString().trim();
@@ -401,14 +406,14 @@
             return s;
         };
 
-        const state = {
+        const state = { 
             view: 'commander', 
-            year: 'all',
+            year: 'all', 
             phase: 'all', 
-            search: '',
-            filterRole: 'all',
-            filterStatus: 'all',
-            charts: {}
+            search: '', 
+            filterRole: 'all', 
+            filterStatus: 'all', 
+            charts: {} 
         };
 
         const cleanName = (name) => {
@@ -424,7 +429,11 @@
             while (changed) {
                 changed = false;
                 for (const p of prefixes) {
-                    if (s.startsWith(p)) { s = s.slice(p.length); changed = true; break; }
+                    if (s.startsWith(p)) { 
+                        s = s.slice(p.length); 
+                        changed = true; 
+                        break; 
+                    }
                 }
             }
             return s;
@@ -437,38 +446,36 @@
                     Papa.parse(url, {
                         download: true, header: true, skipEmptyLines: true,
                         complete: (results) => resolve(results.data),
-                        error: (error) => { console.error(`ไม่สามารถดึงชีต gid=${gid}:`, error); resolve([]); }
+                        error: (error) => { console.error(`Error gid=${gid}:`, error); resolve([]); }
                     });
                 });
             };
 
             try {
-                // ดึงข้อมูล 68 หลังภารกิจ, 69 ก่อนภารกิจ และ 69 หลังภารกิจ
+                // ดึงข้อมูลทั้ง 3 ชีต
                 const [sheet68Post, sheet69Pre, sheet69Post] = await Promise.all([
-                    fetchSheet('2028719085'),  // 68 หลังภารกิจ
-                    fetchSheet('440652878'),   // 69 ก่อนภารกิจ
-                    fetchSheet('1290943524')   // 69 หลังภารกิจ
+                    fetchSheet('2028719085'), // 68 หลัง
+                    fetchSheet('440652878'),  // 69 ก่อน
+                    fetchSheet('1290943524')  // 69 หลัง
                 ]);
 
                 const mergedUsers = {};
 
                 const mergeData = (data, year, phase) => {
                     if (!data || data.length === 0) return;
-                    
                     data.forEach(row => {
                         const rawName = row['ชื่อ-สกุล'] ? row['ชื่อ-สกุล'].trim() : null;
                         if (!rawName || rawName === '-') return;
-
+                        
                         const name = cleanName(rawName);
                         if (!name) return;
-
+                        
                         let id = row['เลขบัตรประชาชน'] ? row['เลขบัตรประชาชน'].trim() : 'ไม่มีระบุ';
                         const key = `${year}_${normalizeKey(rawName)}`;
 
-                        // โครงสร้างข้อมูลตั้งต้น
                         if (!mergedUsers[key]) {
                             mergedUsers[key] = {
-                                id: id, name: name, rawName: rawName, year: year, age: null, bmi: null,
+                                id: id, hn: null, name: name, rawName: rawName, year: year, age: null, bmi: null,
                                 pre_cond: 'ไม่มี', raw_role: 'ไม่ได้ระบุ', chosen_role: 'None', 
                                 pre_sys: null, pre_dia: null, pre_pulse: null,
                                 post_sys: null, post_dia: null, post_pulse: null,
@@ -478,7 +485,9 @@
                         
                         const user = mergedUsers[key];
                         
-                        // อ่านข้อมูลตามหัวคอลัมน์จริง
+                        const hnVal = row['HN'];
+                        if (hnVal && hnVal.trim() !== '-' && hnVal.trim() !== '') user.hn = hnVal.trim();
+                        
                         if (row['อายุ']) user.age = parseInt(row['อายุ']);
                         if (row['BMI']) user.bmi = parseFloat(row['BMI']);
                         if (row['โรคประจำตัว'] && row['โรคประจำตัว'].trim() !== '-') user.pre_cond = row['โรคประจำตัว'].trim();
@@ -515,10 +524,9 @@
                     });
                 };
 
-                // นำข้อมูลเข้าสู่ระบบ
                 mergeData(sheet68Post, '2568', 'post');
                 mergeData(sheet69Pre, '2569', 'pre');
-                mergeData(sheet69Post, '2569', 'post'); // เพิ่มการประมวลผล 69 หลังภารกิจ
+                mergeData(sheet69Post, '2569', 'post');
 
                 const classifyVerdict = (text) => {
                     if (!text) return null;
@@ -540,13 +548,18 @@
                         const evalDia = user.post_dia !== null ? user.post_dia : (user.pre_dia !== null ? user.pre_dia : 0);
                         const evalAge = user.age || 0;
                         const evalBmi = user.bmi || 0;
-
-                        if (evalSys >= 180 || evalDia >= 110) user.status = 'Referral';
-                        else if ((evalSys > 150) || (evalAge > 60) || (evalBmi > 30) || (user.pre_cond && user.pre_cond !== 'ไม่มี' && user.pre_cond !== '-')) user.status = 'Conditional';
+                        
+                        if (evalSys >= 180 || evalDia >= 110) {
+                            user.status = 'Referral';
+                        } else if ((evalSys > 150) || (evalAge > 60) || (evalBmi > 30) || (user.pre_cond && user.pre_cond !== 'ไม่มี' && user.pre_cond !== '-')) {
+                            user.status = 'Conditional';
+                        }
                     }
 
-                    if (user.status === 'Ready' && user.chosen_role === 'Support') user.status = 'Conditional';
-
+                    if (user.status === 'Ready' && user.chosen_role === 'Support') {
+                        user.status = 'Conditional';
+                    }
+                    
                     user.recommended_role = user.status === 'Referral' ? 'Medical' : (user.status === 'Conditional' ? 'Support' : 'Frontline');
                     user.mismatch = (user.chosen_role === 'Frontline' && user.recommended_role !== 'Frontline');
                     if (!user.pre_cond || user.pre_cond === '-') user.pre_cond = 'ไม่มี';
@@ -558,9 +571,9 @@
                 finalData.sort((a,b) => a.name.localeCompare(b.name, 'th'));
                 return finalData;
 
-            } catch (err) {
-                console.error("Critical error:", err);
-                return [];
+            } catch (err) { 
+                console.error("Error:", err); 
+                return []; 
             }
         };
 
@@ -568,65 +581,62 @@
             const select = document.getElementById('filterYear');
             const years = [...new Set(appData.map(d => d.year))].sort().reverse();
             select.innerHTML = '<option value="all">รวมทั้งหมด</option>';
-            years.forEach(y => {
-                const opt = document.createElement('option');
-                opt.value = y; opt.textContent = y;
-                select.appendChild(opt);
+            years.forEach(y => { 
+                const opt = document.createElement('option'); 
+                opt.value = y; 
+                opt.textContent = y; 
+                select.appendChild(opt); 
             });
-            if (years.includes('2569')) { select.value = '2569'; state.year = '2569'; }
-        };
-
-        const maskName = (fullName) => {
-            const parts = fullName.split(' ');
-            if (parts.length > 1) return `${parts[0]} ${parts[1].charAt(0)}***`;
-            return fullName;
+            if (years.includes('2569')) { 
+                select.value = '2569'; 
+                state.year = '2569'; 
+            }
         };
 
         const getFilteredData = () => {
             return appData.filter(item => {
                 const matchYear = state.year === 'all' || item.year === state.year;
-                const matchSearch = item.name.toLowerCase().includes(state.search.toLowerCase()) || item.id.toLowerCase().includes(state.search.toLowerCase());
+                const matchSearch = item.name.toLowerCase().includes(state.search.toLowerCase()) || 
+                                    item.id.toLowerCase().includes(state.search.toLowerCase()) ||
+                                    (item.hn && item.hn.toLowerCase().includes(state.search.toLowerCase()));
                 const matchRole = state.filterRole === 'all' || item.chosen_role === state.filterRole;
                 const matchStatus = state.filterStatus === 'all' || item.status === state.filterStatus;
-                return matchYear && matchSearch && matchRole && matchStatus;
+                
+                let matchPhase = true;
+                if (state.phase === 'pre') {
+                    matchPhase = (item.pre_sys !== null || item.pre_verdict !== null);
+                } else if (state.phase === 'post') {
+                    matchPhase = (item.post_sys !== null || item.post_verdict !== null || (item.post_diag && item.post_diag.length > 0 && item.post_diag[0] !== 'ปกติ'));
+                }
+
+                return matchYear && matchSearch && matchRole && matchStatus && matchPhase;
             });
         };
 
         const updateKPIs = (data) => {
-            let validData = data;
-            let phaseText = '';
-            
-            if (state.phase === 'pre') {
-                validData = data.filter(d => d.pre_sys !== null || d.pre_verdict !== null);
-                phaseText = 'ก่อนภารกิจ';
-            } else if (state.phase === 'post') {
-                validData = data.filter(d => d.post_sys !== null || d.post_verdict !== null || (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ'));
-                phaseText = 'หลังภารกิจ';
-            } else {
-                phaseText = 'ภาพรวม';
-            }
-
-            const total = validData.length;
-            const frontline = validData.filter(d => d.status === 'Ready').length;
-            const support = validData.filter(d => d.status === 'Conditional').length;
-            const referral = validData.filter(d => d.status === 'Referral').length;
+            const phaseText = state.phase === 'pre' ? 'ก่อนภารกิจ' : (state.phase === 'post' ? 'หลังภารกิจ' : 'ภาพรวม');
+            const total = data.length;
+            const frontline = data.filter(d => d.status === 'Ready').length;
+            const support = data.filter(d => d.status === 'Conditional').length;
+            const referral = data.filter(d => d.status === 'Referral').length;
 
             const yearText = state.year === 'all' ? 'ทุกปี' : `ปี ${state.year}`;
             const labelEl = document.getElementById('kpiTotalLabel');
-            if (labelEl) labelEl.innerText = `กำลังพลที่ตรวจ (${yearText} ${phaseText})`;
+            if (labelEl) {
+                labelEl.innerText = `กำลังพลที่ตรวจ (${yearText} ${phaseText})`;
+            }
 
             document.getElementById('kpiTotal').innerText = total;
             document.getElementById('kpiFrontline').innerText = frontline;
             document.getElementById('kpiSupport').innerText = support;
             document.getElementById('kpiAlert').innerText = referral;
-
             document.getElementById('kpiFrontlinePct').innerText = total > 0 ? `${((frontline/total)*100).toFixed(1)}% ของทั้งหมด` : '0%';
             document.getElementById('kpiSupportPct').innerText = total > 0 ? `${((support/total)*100).toFixed(1)}% ของทั้งหมด` : '0%';
 
             const mismatches = data.filter(d => d.mismatch).length;
             const alertEl = document.getElementById('mismatchAlert');
             if (mismatches > 0 && state.phase !== 'post') {
-                alertEl.classList.remove('hidden');
+                alertEl.classList.remove('hidden'); 
                 document.getElementById('mismatchCount').innerText = mismatches;
             } else {
                 alertEl.classList.add('hidden');
@@ -635,79 +645,111 @@
 
         const resolveMismatches = () => {
             const currentData = getFilteredData();
-            currentData.forEach(d => {
-                if (d.mismatch) { d.chosen_role = 'Support'; d.mismatch = false; }
+            currentData.forEach(d => { 
+                if (d.mismatch) { 
+                    d.chosen_role = 'Support'; 
+                    d.mismatch = false; 
+                } 
             });
             updateDashboard();
             const btn = document.querySelector('#mismatchAlert button');
-            btn.innerText = "ปรับปรุงข้อมูลสำเร็จ";
-            btn.classList.replace('text-amber-700', 'text-emerald-700');
+            btn.innerText = "ปรับปรุงข้อมูลสำเร็จ"; 
+            btn.classList.replace('text-amber-700', 'text-emerald-700'); 
             btn.classList.replace('border-amber-300', 'border-emerald-300');
             setTimeout(() => { updateDashboard(); }, 1500);
         };
 
         const initOrUpdateCharts = (data) => {
-            Chart.defaults.font.family = "'Inter', 'Prompt', sans-serif";
+            Chart.defaults.font.family = "'Inter', 'Prompt', sans-serif"; 
             Chart.defaults.color = '#64748b';
-            destroyCharts();
+            
+            Object.values(state.charts).forEach(chart => chart && chart.destroy());
 
             const ctxFitness = document.getElementById('chartFitness').getContext('2d');
             const counts = { Ready: 0, Conditional: 0, Referral: 0 };
             data.forEach(d => counts[d.status]++);
             state.charts.fitness = new Chart(ctxFitness, {
                 type: 'doughnut',
-                data: {
-                    labels: ['พร้อม (แนวหน้า)', 'มีเงื่อนไข (สนับสนุน)', 'งดภารกิจ (ส่งแพทย์)'],
-                    datasets: [{ data: [counts.Ready, counts.Conditional, counts.Referral], backgroundColor: ['#15803d', '#b45309', '#b91c1c'], borderWidth: 0, hoverOffset: 4 }]
+                data: { 
+                    labels: ['พร้อม (แนวหน้า)', 'มีเงื่อนไข (สนับสนุน)', 'งดภารกิจ (ส่งแพทย์)'], 
+                    datasets: [{ 
+                        data: [counts.Ready, counts.Conditional, counts.Referral], 
+                        backgroundColor: ['#15803d', '#b45309', '#b91c1c'], 
+                        borderWidth: 0 
+                    }] 
                 },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    cutout: '70%', 
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } } 
+                }
             });
 
             const ctxDiag = document.getElementById('chartDiagnoses').getContext('2d');
             const diagCounts = {};
-            data.forEach(d => {
+            data.forEach(d => { 
                 if(d.post_diag && d.post_diag.length > 0) {
-                    d.post_diag.forEach(diag => { if (diag !== 'ปกติ') diagCounts[diag] = (diagCounts[diag] || 0) + 1; });
+                    d.post_diag.forEach(diag => { 
+                        if (diag !== 'ปกติ') diagCounts[diag] = (diagCounts[diag] || 0) + 1; 
+                    }); 
                 }
             });
             const sortedDiags = Object.entries(diagCounts).sort((a,b) => b[1] - a[1]).slice(0,5);
             state.charts.diagnoses = new Chart(ctxDiag, {
-                type: 'bar', indexAxis: 'y',
-                data: {
-                    labels: sortedDiags.length ? sortedDiags.map(d => d[0]) : ['ไม่มีข้อมูล/ปกติ'],
-                    datasets: [{ label: 'จำนวนเคส', data: sortedDiags.length ? sortedDiags.map(d => d[1]) : [0], backgroundColor: '#64748b', borderRadius: 4 }]
+                type: 'bar', 
+                indexAxis: 'y',
+                data: { 
+                    labels: sortedDiags.length ? sortedDiags.map(d => d[0]) : ['ไม่มีข้อมูล/ปกติ'], 
+                    datasets: [{ 
+                        label: 'จำนวนเคส', 
+                        data: sortedDiags.length ? sortedDiags.map(d => d[1]) : [0], 
+                        backgroundColor: '#64748b', 
+                        borderRadius: 4 
+                    }] 
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { 
+                        x: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } }, 
+                        y: { grid: { display: false } } 
+                    } 
+                }
             });
 
             const ctxScatter = document.getElementById('chartScatter').getContext('2d');
             const validScatter = data.filter(d => d.age !== null && d.bmi !== null);
-            const scatterDataReady = validScatter.filter(d=>d.status==='Ready').map(d => ({x: d.age, y: d.bmi, _d: d}));
-            const scatterDataCond = validScatter.filter(d=>d.status==='Conditional').map(d => ({x: d.age, y: d.bmi, _d: d}));
-            const scatterDataRef = validScatter.filter(d=>d.status==='Referral').map(d => ({x: d.age, y: d.bmi, _d: d}));
             state.charts.scatter = new Chart(ctxScatter, {
                 type: 'scatter',
                 data: {
                     datasets: [
-                        { label: 'ปกติ', data: scatterDataReady, backgroundColor: 'rgba(21, 128, 61, 0.5)', borderColor: '#15803d' },
-                        { label: 'เฝ้าระวัง', data: scatterDataCond, backgroundColor: 'rgba(180, 83, 9, 0.5)', borderColor: '#b45309' },
-                        { label: 'เสี่ยงสูง', data: scatterDataRef, backgroundColor: 'rgba(185, 28, 28, 0.5)', borderColor: '#b91c1c' }
+                        { label: 'ปกติ', data: validScatter.filter(d=>d.status==='Ready').map(d => ({x: d.age, y: d.bmi, _d: d})), backgroundColor: 'rgba(21, 128, 61, 0.5)', borderColor: '#15803d' },
+                        { label: 'เฝ้าระวัง', data: validScatter.filter(d=>d.status==='Conditional').map(d => ({x: d.age, y: d.bmi, _d: d})), backgroundColor: 'rgba(180, 83, 9, 0.5)', borderColor: '#b45309' },
+                        { label: 'เสี่ยงสูง', data: validScatter.filter(d=>d.status==='Referral').map(d => ({x: d.age, y: d.bmi, _d: d})), backgroundColor: 'rgba(185, 28, 28, 0.5)', borderColor: '#b91c1c' }
                     ]
                 },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { x: { title: { display: true, text: 'อายุ (ปี)' } }, y: { title: { display: true, text: 'BMI' } } },
-                    plugins: { tooltip: { callbacks: { label: (ctx) => {
-                        const d = ctx.raw._d;
-                        const sysStr = d.pre_sys !== null ? d.pre_sys : (d.post_sys !== null ? d.post_sys : '-');
-                        const diaStr = d.pre_dia !== null ? d.pre_dia : (d.post_dia !== null ? d.post_dia : '-');
-                        return `${d.name} (อายุ: ${d.age}, BMI: ${d.bmi}, BP: ${sysStr}/${diaStr})`;
-                    } } } }
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        x: { title: { display: true, text: 'อายุ (ปี)' } }, 
+                        y: { title: { display: true, text: 'BMI' } } 
+                    },
+                    plugins: { 
+                        tooltip: { 
+                            callbacks: { 
+                                label: (ctx) => {
+                                    const d = ctx.raw._d;
+                                    return `${d.name} (อายุ: ${d.age}, BMI: ${d.bmi})`;
+                                } 
+                            } 
+                        } 
+                    }
                 }
             });
         };
-
-        const destroyCharts = () => { Object.values(state.charts).forEach(chart => chart && chart.destroy()); };
 
         const renderTable = () => {
             state.search = document.getElementById('searchInput').value;
@@ -727,27 +769,25 @@
 
             if (!hasDataForPhase) {
                 tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium bg-slate-50">ไม่มีข้อมูล${state.phase === 'pre' ? 'ก่อน' : 'หลัง'}ปฏิบัติภารกิจสำหรับปีงบประมาณนี้</td></tr>`;
-                document.getElementById('tableShowing').innerText = 0;
+                document.getElementById('tableShowing').innerText = 0; 
                 document.getElementById('tableTotal').innerText = 0;
                 return; 
             }
 
             filteredData.slice(0, 50).forEach((item) => {
-                
-                // ตรรกะ Safety Badge แบบใหม่ตามประเภทภารกิจ
                 let badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
                 let badgeIcon = 'check-circle';
                 let badgeText = '';
 
                 if (item.status === 'Referral') {
-                    badgeClass = 'bg-red-50 text-red-700 border-red-200';
-                    badgeIcon = 'x-circle';
+                    badgeClass = 'bg-red-50 text-red-700 border-red-200'; 
+                    badgeIcon = 'x-circle'; 
                     badgeText = 'งดปฏิบัติภารกิจ (ส่งต่อแพทย์)';
                 } else {
                     let approvedRole = item.raw_role;
-                    if (item.status === 'Conditional' && item.chosen_role === 'Frontline') {
-                        approvedRole = 'หน่วยสนับสนุน';
-                        badgeIcon = 'alert-circle';
+                    if (item.status === 'Conditional' && item.chosen_role === 'Frontline') { 
+                        approvedRole = 'หน่วยสนับสนุน'; 
+                        badgeIcon = 'alert-circle'; 
                     }
                     badgeText = `เหมาะกับการเป็น ${approvedRole}`;
                     
@@ -755,50 +795,37 @@
                     else if (approvedRole.includes('อาสาสมัคร')) badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
                     else if (approvedRole.includes('แนวกันไฟ') || approvedRole.includes('ร่วมทำแนว')) badgeClass = 'bg-green-100 text-green-800 border-green-200';
                     else if (approvedRole.includes('สนับสนุน') || approvedRole.includes('ส่งกำลัง')) badgeClass = 'bg-blue-100 text-blue-800 border-blue-200';
-                    else {
-                        badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
-                        if(approvedRole === 'ไม่ได้ระบุ') badgeText = 'เหมาะกับการเป็น... (ไม่ได้ระบุ)';
+                    else { 
+                        badgeClass = 'bg-slate-100 text-slate-700 border-slate-200'; 
+                        if(approvedRole === 'ไม่ได้ระบุ') badgeText = 'เหมาะกับการเป็น... (ไม่ได้ระบุ)'; 
                     }
                 }
 
-                let sys = item.pre_sys, dia = item.pre_dia, pulse = item.pre_pulse;
-                let vitalsNote = "(Pre)";
-                if(state.phase === 'post') {
-                    sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)";
-                } else if (state.phase === 'all' && item.post_sys !== null) {
-                    sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)";
+                let sys = item.pre_sys, dia = item.pre_dia, pulse = item.pre_pulse, vitalsNote = "(Pre)";
+                if(state.phase === 'post') { 
+                    sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)"; 
+                } else if (state.phase === 'all' && item.post_sys !== null) { 
+                    sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)"; 
                 }
-
-                const dSys = sys !== null ? sys : '-';
-                const dDia = dia !== null ? dia : '-';
-                const dPulse = pulse !== null ? pulse : '-';
 
                 let bpClass = (sys !== null && (sys >= 140 || dia >= 90)) ? 'text-amber-600 font-semibold' : 'text-slate-600';
                 if(sys !== null && (sys >= 180 || dia >= 110)) bpClass = 'text-red-600 font-bold';
 
-                const ageStr = item.age !== null ? item.age : '-';
-                const bmiStr = item.bmi !== null ? item.bmi : '-';
-
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition-colors cursor-pointer group";
                 tr.onclick = () => openModal(`${item.year}_${item.name}`);
-                
                 tr.innerHTML = `
                     <td class="p-4">
                         <div class="font-medium text-brand-900">${maskName(item.name)}</div>
-                        <div class="text-xs text-slate-400 font-inter">${maskID(item.id)}</div>
+                        <div class="text-xs text-slate-400 font-inter">HN: ${item.hn || '-'} | ID: ${maskID(item.id)}</div>
                     </td>
                     <td class="p-4 text-center">
-                        <div>${ageStr} <span class="text-xs text-slate-400">ปี</span></div>
-                        <div class="text-xs font-inter text-slate-500">BMI ${bmiStr}</div>
+                        <div>${item.age !== null ? item.age : '-'} <span class="text-xs text-slate-400">ปี</span></div>
+                        <div class="text-xs font-inter text-slate-500">BMI ${item.bmi !== null ? item.bmi : '-'}</div>
                     </td>
                     <td class="p-4">
-                        <div class="${bpClass} font-inter flex items-baseline gap-1">
-                            ${dSys}/${dDia} <span class="text-[10px] text-slate-400">${vitalsNote}</span>
-                        </div>
-                        <div class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                            <i data-lucide="heart" class="w-3 h-3 ${dPulse !== '-' ? 'text-red-400' : 'text-slate-300'}"></i> ${dPulse} bpm
-                        </div>
+                        <div class="${bpClass} font-inter flex items-baseline gap-1">${sys !== null ? sys : '-'}/${dia !== null ? dia : '-'} <span class="text-[10px] text-slate-400">${vitalsNote}</span></div>
+                        <div class="text-xs text-slate-500 flex items-center gap-1 mt-0.5"><i data-lucide="heart" class="w-3 h-3 ${pulse !== null ? 'text-red-400' : 'text-slate-300'}"></i> ${pulse !== null ? pulse : '-'} bpm</div>
                     </td>
                     <td class="p-4">
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${item.chosen_role === 'Frontline' ? 'bg-orange-50 text-orange-700' : (item.chosen_role === 'Support' ? 'bg-slate-100 text-slate-700' : 'bg-slate-100 text-slate-400')}">
@@ -807,17 +834,8 @@
                         </span>
                         ${item.mismatch ? '<div class="text-[10px] text-amber-600 mt-1 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> ขัดแย้งผลแพทย์</div>' : ''}
                     </td>
-                    <td class="p-4">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${badgeClass}">
-                            <i data-lucide="${badgeIcon}" class="w-3.5 h-3.5"></i>
-                            ${badgeText}
-                        </span>
-                    </td>
-                    <td class="p-4 text-center">
-                        <button class="text-brand-500 hover:text-brand-900 p-2 rounded-lg hover:bg-slate-100 transition-colors opacity-0 group-hover:opacity-100">
-                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                        </button>
-                    </td>
+                    <td class="p-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${badgeClass}"><i data-lucide="${badgeIcon}" class="w-3.5 h-3.5"></i> ${badgeText}</span></td>
+                    <td class="p-4 text-center"><button class="text-brand-500 hover:text-brand-900 p-2 rounded-lg hover:bg-slate-100 transition-colors opacity-0 group-hover:opacity-100"><i data-lucide="chevron-right" class="w-5 h-5"></i></button></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -831,8 +849,8 @@
             if (!isAuthenticated) return; 
             state.year = document.getElementById('filterYear').value;
             const data = getFilteredData();
-            updateKPIs(data);
-            initOrUpdateCharts(data);
+            updateKPIs(data); 
+            initOrUpdateCharts(data); 
             renderTable();
         };
 
@@ -840,24 +858,22 @@
             state.phase = phase;
             ['All', 'Pre', 'Post'].forEach(p => {
                 const btn = document.getElementById(`phase${p}`);
-                const isSelected = phase === p.toLowerCase();
-                if(isSelected) {
-                    btn.classList.replace('text-brand-100', 'bg-brand-500/20');
-                    btn.classList.replace('hover:text-white', 'text-white');
-                } else {
-                    btn.classList.replace('bg-brand-500/20', 'text-brand-100');
-                    btn.classList.replace('text-white', 'text-brand-100');
-                    btn.classList.add('hover:text-white');
+                if(phase === p.toLowerCase()) { 
+                    btn.classList.replace('text-brand-100', 'bg-brand-500/20'); 
+                    btn.classList.replace('hover:text-white', 'text-white'); 
+                } else { 
+                    btn.classList.replace('bg-brand-500/20', 'text-brand-100'); 
+                    btn.classList.replace('text-white', 'text-brand-100'); 
+                    btn.classList.add('hover:text-white'); 
                 }
             });
             updateDashboard(); 
         };
 
         const switchView = (viewType) => {
-            // ไม่ว่าจะกดปุ่มไหน หากยังไม่ยืนยันตัวตน ให้แสดงหน้าล็อกอินเสมอ
             if (!isAuthenticated) {
-                document.getElementById('loginModal').classList.remove('hidden');
-                document.getElementById('passwordInput').focus();
+                document.getElementById('loginModal').classList.remove('hidden'); 
+                document.getElementById('passwordInput').focus(); 
                 return;
             }
             executeSwitchView(viewType);
@@ -867,27 +883,23 @@
             state.view = viewType;
             if(viewType === 'volunteer') {
                 document.body.classList.add('mode-volunteer');
-                
-                // ดึงรายชื่ออาสาสมัครมาสร้างรายการค้นหา (Autocomplete)
                 const datalist = document.getElementById('vpSearchList');
-                datalist.innerHTML = '';
+                datalist.innerHTML = ''; 
                 const seenKeys = new Set();
                 appData.forEach(d => {
                     const normKey = normalizeKey(d.rawName);
                     if (!seenKeys.has(normKey)) {
                         seenKeys.add(normKey);
-                        const opt = document.createElement('option');
-                        opt.value = `${d.name} | ${maskID(d.id)}`;
+                        const opt = document.createElement('option'); 
+                        opt.value = `${d.name} | HN:${d.hn || '-'} | ID:${maskID(d.id)}`; 
                         datalist.appendChild(opt);
                     }
                 });
-
-                document.getElementById('vpSearchInput').value = ''; // เคลียร์ช่องค้นหา
-                
+                document.getElementById('vpSearchInput').value = ''; 
                 const user = appData.find(d => d.status === 'Conditional') || appData[0];
                 if(user) populateVolunteerPassport(user);
             } else {
-                document.body.classList.remove('mode-volunteer');
+                document.body.classList.remove('mode-volunteer'); 
                 updateDashboard(); 
             }
         };
@@ -895,59 +907,49 @@
         const handleVpSearch = () => {
             const inputVal = document.getElementById('vpSearchInput').value.toLowerCase().trim();
             if (!inputVal) return;
-            
-            // แยกระหว่างชื่อกับเลขบัตรกรณีเลือกจาก Dropdown
             const searchTerm = inputVal.split('|')[0].trim();
-
-            const user = appData.find(d => 
-                d.name.toLowerCase().includes(searchTerm) || 
-                d.id.includes(searchTerm) || 
-                d.rawName.toLowerCase().includes(searchTerm)
-            );
-
-            if (user) {
-                populateVolunteerPassport(user);
-                document.getElementById('vpSearchInput').blur(); // เอาเคอร์เซอร์ออก
+            const user = appData.find(d => d.name.toLowerCase().includes(searchTerm) || d.id.includes(searchTerm) || (d.hn && d.hn.toLowerCase().includes(searchTerm)) || d.rawName.toLowerCase().includes(searchTerm));
+            if (user) { 
+                populateVolunteerPassport(user); 
+                document.getElementById('vpSearchInput').blur(); 
             } else {
                 alert('ไม่พบข้อมูลอาสาสมัคร กรุณาลองค้นหาด้วยชื่อ-สกุล หรือเลขบัตร/HN อื่น');
             }
         };
 
         const verifyPassword = () => {
-            const input = document.getElementById('passwordInput').value;
-            const errorMsg = document.getElementById('passwordError');
-            if (input === COMMANDER_PASSWORD) {
-                isAuthenticated = true;
-                document.getElementById('loginModal').classList.add('hidden');
-                document.getElementById('passwordInput').value = '';
-                errorMsg.classList.add('hidden');
+            if (document.getElementById('passwordInput').value === COMMANDER_PASSWORD) {
+                isAuthenticated = true; 
+                document.getElementById('loginModal').classList.add('hidden'); 
+                document.getElementById('passwordInput').value = ''; 
+                document.getElementById('passwordError').classList.add('hidden');
                 executeSwitchView('commander');
             } else {
-                errorMsg.classList.remove('hidden');
+                document.getElementById('passwordError').classList.remove('hidden');
             }
         };
 
         const closeLoginModal = () => {
-            document.getElementById('loginModal').classList.add('hidden');
-            document.getElementById('passwordInput').value = '';
+            document.getElementById('loginModal').classList.add('hidden'); 
+            document.getElementById('passwordInput').value = ''; 
             document.getElementById('passwordError').classList.add('hidden');
             if (!isAuthenticated) executeSwitchView('volunteer');
         };
 
         const populateVolunteerPassport = (user) => {
+            document.getElementById('passportCard').classList.remove('hidden');
             document.getElementById('vp-name').innerText = user.name;
-            document.getElementById('vp-id').innerText = maskID(user.id);
+            document.getElementById('vp-id').innerText = `HN: ${user.hn || '-'} | ID: ${maskID(user.id)}`;
             document.getElementById('vp-age').innerText = user.age !== null ? user.age : '-';
             
             const sys = user.pre_sys !== null ? user.pre_sys : (user.post_sys !== null ? user.post_sys : '-');
             const dia = user.pre_dia !== null ? user.pre_dia : (user.post_dia !== null ? user.post_dia : '-');
             document.getElementById('vp-bp').innerText = `${sys}/${dia}`;
-            
             document.getElementById('vp-pulse').innerText = user.pre_pulse !== null ? user.pre_pulse : (user.post_pulse !== null ? user.post_pulse : '-');
             document.getElementById('vp-bmi').innerText = user.bmi !== null ? user.bmi : '-';
             document.getElementById('vp-cond').innerText = user.pre_cond;
 
-            const bpEl = document.getElementById('vp-bp');
+            const bpEl = document.getElementById('vp-bp'); 
             bpEl.className = "text-lg font-bold font-inter text-brand-900"; 
             if(sys !== '-' && sys >= 140) bpEl.classList.replace('text-brand-900', 'text-amber-600');
             if(sys !== '-' && sys >= 180) bpEl.classList.replace('text-amber-600', 'text-red-600');
@@ -957,14 +959,11 @@
             const msgText = document.getElementById('vp-message');
             const recList = document.getElementById('vp-recommendations');
             
-            recList.innerHTML = ''; 
-
             if(user.status === 'Ready') {
-                badgeEl.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i><span class="text-green-700">พร้อมปฏิบัติหน้าที่</span>`;
+                badgeEl.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i><span class="text-green-700">พร้อมปฏิบัติหน้าที่</span>`; 
                 badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-green-200";
                 msgBox.className = "bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm";
                 
-                // ตรวจสอบว่าอาสาสมัครได้ระบุภารกิจไว้หรือไม่
                 if (user.raw_role === 'ไม่ได้ระบุ' || !user.raw_role) {
                     msgText.innerHTML = `ท่านได้รับการรับรองความพร้อมสำหรับภารกิจที่ท่านเลือก เพื่อความปลอดภัยสูงสุด ขอให้ท่านปฏิบัติตามกฎความปลอดภัยอย่างเคร่งครัด`;
                 } else {
@@ -973,78 +972,51 @@
                 
                 recList.innerHTML = `<li class="flex gap-2"><i data-lucide="droplets" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> ดื่มน้ำให้เพียงพอ 3-4 ลิตรต่อวันระหว่างปฏิบัติงาน</li><li class="flex gap-2"><i data-lucide="wind" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> สวมหน้ากาก N95 ตลอดเวลาในพื้นที่ควันหนาแน่น</li>`;
             } else if (user.status === 'Conditional') {
-                badgeEl.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i><span class="text-amber-700">เหมาะสมกับงานสนับสนุน</span>`;
+                badgeEl.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i><span class="text-amber-700">เหมาะสมกับงานสนับสนุน</span>`; 
                 badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-amber-200";
                 msgBox.className = "bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm";
                 msgText.innerHTML = `ด้วยความห่วงใยในสุขภาพของท่าน แพทย์ประเมินว่าท่านเหมาะสมสำหรับ: <strong class="text-amber-900">ภารกิจสนับสนุนและส่งกำลังบำรุง (งดภารกิจแนวหน้า)</strong> เนื่องจากประเมินจากความดันโลหิตหรือประวัติสุขภาพ`;
                 recList.innerHTML = `<li class="flex gap-2"><i data-lucide="pill" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> กรุณารับประทานยาประจำตัวตามแพทย์สั่งอย่างเคร่งครัด</li><li class="flex gap-2"><i data-lucide="thermometer-sun" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หลีกเลี่ยงการทำงานกลางแดดจัดติดต่อกันเป็นเวลานาน เพื่อป้องกันโรคลมแดด</li><li class="flex gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หากมีอาการวิงเวียน หน้ามืด ให้แจ้งหัวหน้าชุดและพักทันที</li>`;
             } else {
-                // ดึงคำวินิจฉัยจากแพทย์มาแสดงผลเฉพาะคนที่ไม่พร้อมทำงาน
                 const verdictStr = user.post_verdict || user.pre_verdict || 'ไม่มีการระบุรายละเอียด';
-                
-                badgeEl.innerHTML = `<i data-lucide="heart-pulse" class="w-4 h-4 text-red-600"></i><span class="text-red-700">ส่งต่อแพทย์ (งดภารกิจ)</span>`;
+                badgeEl.innerHTML = `<i data-lucide="heart-pulse" class="w-4 h-4 text-red-600"></i><span class="text-red-700">ส่งต่อแพทย์ (งดภารกิจ)</span>`; 
                 badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-red-200";
                 msgBox.className = "bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm flex flex-col gap-2";
-                msgText.innerHTML = `ผลการตรวจร่างกายของท่านอยู่ในเกณฑ์ <strong class="text-red-900">เฝ้าระวัง</strong> ขอให้ท่านงดการปฏิบัติภารกิจภาคสนามทุกประเภทในครั้งนี้ และเข้ารับการตรวจรักษาจากทีมแพทย์ศูนย์ฯ`;
-                
-                // เพิ่มกล่องแสดงคำวินิจฉัย
-                msgText.innerHTML += `<div class="mt-2 text-red-800 bg-red-100/50 px-3 py-2 rounded border border-red-200/50"><strong>คำวินิจฉัยแพทย์:</strong> ${verdictStr}</div>`;
-                
+                msgText.innerHTML = `ผลการตรวจร่างกายของท่านอยู่ในเกณฑ์ <strong class="text-red-900">เฝ้าระวัง</strong> ขอให้ท่านงดการปฏิบัติภารกิจภาคสนามทุกประเภทในครั้งนี้ และเข้ารับการตรวจรักษาจากทีมแพทย์ศูนย์ฯ<div class="mt-2 text-red-800 bg-red-100/50 px-3 py-2 rounded border border-red-200/50"><strong>คำวินิจฉัยแพทย์:</strong> ${verdictStr}</div>`;
                 recList.innerHTML = `<li class="flex gap-2"><i data-lucide="stethoscope" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> โปรดติดต่อเต็นท์พยาบาลเพื่อตรวจเช็คสัญญาณชีพซ้ำและรับคำปรึกษา</li><li class="flex gap-2"><i data-lucide="bed" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> นอนหลับพักผ่อนให้เพียงพอ และงดเครื่องดื่มชูกำลัง/คาเฟอีน</li>`;
             }
-            // ---- ส่วนสร้าง Dashboard ย้อนหลัง ----
-            const histSection = document.getElementById('volunteerHistorySection');
-            histSection.classList.remove('hidden');
 
-            // 1. ค้นหาข้อมูลของอาสาคนนี้ย้อนหลังในทุกปีที่มี
+            const histSection = document.getElementById('volunteerHistorySection'); 
+            histSection.classList.remove('hidden');
             const userNormKey = normalizeKey(user.rawName);
-            const userHistory = appData.filter(d => normalizeKey(d.rawName) === userNormKey)
-                                       .sort((a, b) => parseInt(a.year) - parseInt(b.year)); 
+            const userHistory = appData.filter(d => normalizeKey(d.rawName) === userNormKey).sort((a, b) => parseInt(a.year) - parseInt(b.year)); 
 
             const years = userHistory.map(d => d.year);
             const bmis = userHistory.map(d => d.bmi);
             const sysData = userHistory.map(d => d.post_sys !== null ? d.post_sys : d.pre_sys);
             const diaData = userHistory.map(d => d.post_dia !== null ? d.post_dia : d.pre_dia);
 
-            // 2. เคลียร์กราฟเก่า (ถ้ามี) เพื่อสร้างใหม่
-            if (state.charts.vpBMI) state.charts.vpBMI.destroy();
+            if (state.charts.vpBMI) state.charts.vpBMI.destroy(); 
             if (state.charts.vpBP) state.charts.vpBP.destroy();
-
-            // 3. วาดกราฟ BMI
-            const ctxBMI = document.getElementById('vpChartBMI').getContext('2d');
-            state.charts.vpBMI = new Chart(ctxBMI, {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [{ label: 'BMI', data: bmis, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false} } }
+            
+            state.charts.vpBMI = new Chart(document.getElementById('vpChartBMI').getContext('2d'), { 
+                type: 'line', 
+                data: { labels: years, datasets: [{ label: 'BMI', data: bmis, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3 }] }, 
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false} } } 
+            });
+            
+            state.charts.vpBP = new Chart(document.getElementById('vpChartBP').getContext('2d'), { 
+                type: 'line', 
+                data: { labels: years, datasets: [ { label: 'ตัวบน (Sys)', data: sysData, borderColor: '#b91c1c', backgroundColor: '#b91c1c', tension: 0.3 }, { label: 'ตัวล่าง (Dia)', data: diaData, borderColor: '#1d4ed8', backgroundColor: '#1d4ed8', tension: 0.3 } ] }, 
+                options: { responsive: true, maintainAspectRatio: false } 
             });
 
-            // 4. วาดกราฟความดันโลหิต
-            const ctxBP = document.getElementById('vpChartBP').getContext('2d');
-            state.charts.vpBP = new Chart(ctxBP, {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [
-                        { label: 'ตัวบน (Sys)', data: sysData, borderColor: '#b91c1c', backgroundColor: '#b91c1c', tension: 0.3 },
-                        { label: 'ตัวล่าง (Dia)', data: diaData, borderColor: '#1d4ed8', backgroundColor: '#1d4ed8', tension: 0.3 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
-            // 5. แสดงประวัติภารกิจในตาราง
-            const tbody = document.getElementById('vpRoleHistoryBody');
+            const tbody = document.getElementById('vpRoleHistoryBody'); 
             tbody.innerHTML = '';
-            userHistory.forEach(d => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="p-2 text-slate-700">${d.year}</td>
-                    <td class="p-2 text-slate-700 font-medium">${d.raw_role || 'ไม่ได้ระบุ'}</td>
-                `;
-                tbody.appendChild(tr);
+            userHistory.forEach(d => { 
+                const tr = document.createElement('tr'); 
+                tr.innerHTML = `<td class="p-2 text-slate-700">${d.year}</td><td class="p-2 text-slate-700 font-medium">${d.raw_role || 'ไม่ได้ระบุ'}</td>`; 
+                tbody.appendChild(tr); 
             });
 
             lucide.createIcons();
@@ -1054,46 +1026,27 @@
             const user = appData.find(d => `${d.year}_${d.name}` === key);
             if(!user) return;
 
-            const modal = document.getElementById('detailModal');
-            const content = document.getElementById('modalContent');
-            
             let statusBanner = '';
             if(user.status === 'Ready') {
                 statusBanner = '<div class="bg-green-50 text-green-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-green-200 text-sm font-medium"><i data-lucide="check-circle" class="w-5 h-5"></i> รับรองการปฏิบัติงาน: แนวหน้า/ทุกภารกิจ</div>';
             } else if(user.status === 'Conditional') {
                 statusBanner = '<div class="bg-amber-50 text-amber-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-amber-200 text-sm font-medium"><i data-lucide="alert-triangle" class="w-5 h-5"></i> รับรองการปฏิบัติงาน: สนับสนุน/ส่งกำลัง (มีเงื่อนไขสุขภาพ)</div>';
             } else {
-                // ดึงคำวินิจฉัยแพทย์มาแสดงใน Banner แจ้งเตือนสีแดง
                 const verdictStr = user.post_verdict || user.pre_verdict || 'ไม่มีการระบุรายละเอียด';
-                statusBanner = `
-                <div class="bg-red-50 text-red-800 p-3 rounded-md mb-4 flex flex-col gap-2 border border-red-200 text-sm font-medium">
-                    <div class="flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> งดการปฏิบัติงาน: ต้องเข้ารับการประเมินโดยแพทย์เพิ่มเติม</div>
-                    <div class="pl-7 text-xs text-red-700 font-normal"><strong>คำวินิจฉัยแพทย์:</strong> ${verdictStr}</div>
-                </div>`;
+                statusBanner = `<div class="bg-red-50 text-red-800 p-3 rounded-md mb-4 flex flex-col gap-2 border border-red-200 text-sm font-medium"><div class="flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> งดการปฏิบัติงาน: ต้องเข้ารับการประเมินโดยแพทย์เพิ่มเติม</div><div class="pl-7 text-xs text-red-700 font-normal"><strong>คำวินิจฉัยแพทย์:</strong> ${verdictStr}</div></div>`;
             }
 
-            const preSysStr = user.pre_sys !== null ? user.pre_sys : '-';
-            const preDiaStr = user.pre_dia !== null ? user.pre_dia : '-';
-            const prePulseStr = user.pre_pulse !== null ? user.pre_pulse : '-';
-            
-            const postSysStr = user.post_sys !== null ? user.post_sys : '-';
-            const postDiaStr = user.post_dia !== null ? user.post_dia : '-';
-            const postPulseStr = user.post_pulse !== null ? user.post_pulse : '-';
+            const sysStr = user.post_sys !== null ? user.post_sys : (user.pre_sys !== null ? user.pre_sys : '-');
+            const diaStr = user.post_dia !== null ? user.post_dia : (user.pre_dia !== null ? user.pre_dia : '-');
+            const pulseStr = user.post_pulse !== null ? user.post_pulse : (user.pre_pulse !== null ? user.pre_pulse : '-');
 
-            const ageStr = user.age !== null ? user.age : '-';
-            const bmiStr = user.bmi !== null ? user.bmi : '-';
-
-            const postDiagHtml = (user.post_diag && user.post_diag.length > 0) 
-                ? user.post_diag.map(d => `<span class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">${d}</span>`).join('')
-                : '<span class="text-xs text-slate-400">ไม่มีข้อมูล</span>';
-
-            content.innerHTML = `
+            document.getElementById('modalContent').innerHTML = `
                 ${statusBanner}
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <div>
                         <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">ข้อมูลทั่วไป</p>
                         <p class="font-bold text-brand-900 text-lg">${user.rawName}</p>
-                        <p class="text-sm text-slate-600 font-inter">HN/ID: ${maskID(user.id)} | อายุ: ${ageStr} | BMI: ${bmiStr}</p>
+                        <p class="text-sm text-slate-600 font-inter">HN: ${user.hn || '-'} | ID: ${maskID(user.id)} | อายุ: ${user.age !== null ? user.age : '-'} | BMI: ${user.bmi !== null ? user.bmi : '-'}</p>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">ความประสงค์</p>
@@ -1101,44 +1054,18 @@
                         <p class="text-sm font-medium text-brand-900">โรคประจำตัว: ${user.pre_cond}</p>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Pre Mission -->
+                <div class="grid grid-cols-1 gap-6">
                     <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
-                        <h4 class="font-semibold text-brand-900 mb-3 flex items-center gap-2"><i data-lucide="clipboard-check" class="w-4 h-4 text-brand-500"></i> ก่อนปฏิบัติภารกิจ (Pre-mission)</h4>
+                        <h4 class="font-semibold text-brand-900 mb-3 flex items-center gap-2"><i data-lucide="clipboard-check" class="w-4 h-4 text-brand-500"></i> ข้อมูลการตรวจสุขภาพ</h4>
                         <div class="space-y-3">
-                            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
-                                <span class="text-sm text-slate-600">ความดันโลหิต</span>
-                                <span class="font-inter font-semibold ${(user.pre_sys !== null && user.pre_sys >= 140) ? 'text-amber-600' : 'text-slate-800'}">${preSysStr}/${preDiaStr} mmHg</span>
-                            </div>
-                            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
-                                <span class="text-sm text-slate-600">อัตราการเต้นหัวใจ</span>
-                                <span class="font-inter font-semibold text-slate-800">${prePulseStr} bpm</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Post Mission -->
-                    <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
-                        <h4 class="font-semibold text-brand-900 mb-3 flex items-center gap-2"><i data-lucide="clipboard-list" class="w-4 h-4 text-brand-500"></i> หลังปฏิบัติภารกิจ (Post-mission)</h4>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
-                                <span class="text-sm text-slate-600">ความดันโลหิต</span>
-                                <span class="font-inter font-semibold ${(user.post_sys !== null && user.post_sys >= 140) ? 'text-amber-600' : 'text-slate-800'}">${postSysStr}/${postDiaStr} mmHg</span>
-                            </div>
-                            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
-                                <span class="text-sm text-slate-600">อัตราการเต้นหัวใจ</span>
-                                <span class="font-inter font-semibold text-slate-800">${postPulseStr} bpm</span>
-                            </div>
-                            <div>
-                                <span class="text-sm text-slate-600 block mb-1">อาการเจ็บป่วยหลังภารกิจ:</span>
-                                <div class="flex flex-wrap gap-1">${postDiagHtml}</div>
-                            </div>
+                            <div class="flex justify-between items-center border-b border-slate-200 pb-2"><span class="text-sm text-slate-600">ความดันโลหิต</span><span class="font-inter font-semibold ${(sysStr !== '-' && sysStr >= 140) ? 'text-amber-600' : 'text-slate-800'}">${sysStr}/${diaStr} mmHg</span></div>
+                            <div class="flex justify-between items-center border-b border-slate-200 pb-2"><span class="text-sm text-slate-600">อัตราการเต้นหัวใจ</span><span class="font-inter font-semibold text-slate-800">${pulseStr} bpm</span></div>
+                            <div><span class="text-sm text-slate-600 block mb-1">อาการผิดปกติ:</span><div class="flex flex-wrap gap-1">${(user.post_diag && user.post_diag.length > 0) ? user.post_diag.map(d => `<span class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">${d}</span>`).join('') : '<span class="text-xs text-slate-400">ไม่มีข้อมูล</span>'}</div></div>
                         </div>
                     </div>
                 </div>
             `;
-            modal.classList.remove('hidden');
+            document.getElementById('detailModal').classList.remove('hidden');
             lucide.createIcons();
         };
 
@@ -1146,8 +1073,6 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
-            const overlay = document.getElementById('loadingOverlay');
-            
             try {
                 appData = await loadGoogleSheetsData();
                 const now = new Date();
@@ -1155,17 +1080,17 @@
                 if(lastUpdatedEl) lastUpdatedEl.innerHTML = `อัปเดตข้อมูลล่าสุด: <span class="font-inter">${now.toLocaleTimeString('th-TH')}</span>`;
                 
                 if(appData && appData.length > 0) {
-                    populateYears();
-                    document.getElementById('loginModal').classList.remove('hidden');
+                    populateYears(); 
+                    document.getElementById('loginModal').classList.remove('hidden'); 
                     document.getElementById('passwordInput').focus();
                 } else {
                     alert("ไม่พบข้อมูล หรือเกิดข้อผิดพลาดในการเชื่อมต่อกับ Google Sheets");
                 }
-            } catch (e) {
-                console.error(e);
+            } catch (e) { 
+                console.error(e); 
             } finally {
-                overlay.style.opacity = '0';
-                setTimeout(() => { overlay.style.display = 'none'; }, 300);
+                document.getElementById('loadingOverlay').style.opacity = '0'; 
+                setTimeout(() => { document.getElementById('loadingOverlay').style.display = 'none'; }, 300);
             }
         });
     </script>
