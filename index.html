@@ -495,8 +495,8 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                         const sysVal = row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null;
                         const diaVal = row['ความดันตัวล่าง'] ? parseInt(row['ความดันตัวล่าง']) : null;
                         const pulseVal = row['ชีพจร'] ? parseInt(row['ชีพจร']) : null;
-                        const verdictVal = row['สุขภาพเหมาะสม หรือมีอะไรผิดปกติ'] ? row['สุขภาพเหมาะสม หรือมีอะไรผิดปกติ'].trim() : null;
-                        const diagStr = row['รายละเอียดความผิดปกติ'] ? row['รายละเอียดความผิดปกติ'].trim() : null;
+                        const verdictVal = row['ผลการตรวจสุขภาพจากแพทย์'] ? row['ผลการตรวจสุขภาพจากแพทย์'].trim() : null;
+                        const diagStr = row['ความผิดปกติจากการวินิจฉัย'] ? row['ความผิดปกติจากการวินิจฉัย'].trim() : null;
 
                         if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
                             const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
@@ -525,9 +525,10 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                 const classifyVerdict = (text) => {
                     if (!text) return null;
                     const t = text.toString();
-                    if (t.includes('ไม่สามารถ')) return 'Referral';
-                    if (t.includes('ควบคุม') || t.includes('ต้องตรวจ') || t.includes('ควรตรวจ') || t.includes('ระวัง') || t.includes('ส่งตรวจ') || t.includes('ข้อจำกัด')) return 'Conditional';
-                    if (t.includes('เหมาะสมกับภารกิจ') || t.includes('ทำงานดับไฟป่าได้') || t === 'ปกติ') return 'Ready';
+                    // ถ้าผลตรวจระบุว่าเป็นความผิดปกติต่างๆ ให้ตีเป็น Referral หรือ Conditional ตามความเหมาะสม
+                    if (t.includes('หัวใจผิดปกติ')) return 'Referral';
+                    if (t.includes('เยื่อบุตา') || t.includes('ทางเดินหายใจ') || t.includes('การได้ยิน') || t.includes('การมองเห็น')) return 'Conditional';
+                    if (t.includes('สุขภาพปกติ') || t.includes('เหมาะสม')) return 'Ready';
                     return null; 
                 };
 
