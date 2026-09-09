@@ -442,37 +442,45 @@ const fetchSheet = (gid) => {
                         let id = row['เลขบัตรประชาชน'] ? row['เลขบัตรประชาชน'].trim() : 'ไม่มีระบุ';
                         const key = `${year}_${normalizeKey(rawName)}`;
 
-                        // 1. สร้างโครงสร้างข้อมูลเริ่มต้น
-                        if (!mergedUsers[key]) {
-                            mergedUsers[key] = {
-                                id: id,
-                                name: name,
-                                rawName: rawName,
-                                year: year,
-                                age: null,
-                                bmi: null,
-                                pre_cond: 'ไม่มี',
-                                chosen_role: 'None', 
-                                pre_sys: null, pre_dia: null, pre_pulse: null,
-                                post_sys: null, post_dia: null, post_pulse: null,
-                                pre_verdict: null, post_verdict: null,
-                                post_diag: []
-                            };
-                        }
-                        
-                        const user = mergedUsers[key];
-                        
-                        // 2. อัปเดตข้อมูลพื้นฐาน
-                        if (row['อายุ']) user.age = parseInt(row['อายุ']);
-                        if (row['BMI']) user.bmi = parseFloat(row['BMI']);
-                        if (row['โรคประจำตัว'] && row['โรคประจำตัว'].trim() !== '-') user.pre_cond = row['โรคประจำตัว'].trim();
+                        filteredData.slice(0, 50).forEach((item) => {
+                
+                // ตรรกะใหม่สำหรับ Safety Badge
+                let badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
+                let badgeIcon = 'check-circle';
+                let badgeText = '';
 
-                        // 3. ดึงข้อมูลภารกิจที่เลือก
-                        const roleVal = row['เข้าร่วมภารกิจ'] || row['ภารกิจที่เลือก'] || row['ภารกิจ'] || row['Role'];
-                        if (roleVal && roleVal.trim() !== '-' && roleVal.trim() !== '') {
-                            const rStr = roleVal.toString();
-                            user.chosen_role = (rStr.includes('สนับสนุน') || rStr.includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
-                        }
+                if (item.status === 'Referral') {
+                    // กรณีไม่ผ่านประเมิน
+                    badgeClass = 'bg-red-50 text-red-700 border-red-200';
+                    badgeIcon = 'x-circle';
+                    badgeText = 'งดปฏิบัติภารกิจ (ส่งต่อแพทย์)';
+                } else {
+                    // กรณีผ่าน หรือ ผ่านแบบมีเงื่อนไข
+                    let approvedRole = item.raw_role;
+                    
+                    // หากแพทย์ประเมินให้ทำได้แค่ Support แต่แรกลง Frontline มา ให้บังคับเป็นหน่วยสนับสนุน
+                    if (item.status === 'Conditional' && item.chosen_role === 'Frontline') {
+                        approvedRole = 'หน่วยสนับสนุน';
+                    }
+
+                    badgeText = `เหมาะกับการเป็น ${approvedRole}`;
+                    
+                    // กำหนดสีตามคีย์เวิร์ดภารกิจ (อิงตามภาพตัวอย่าง)
+                    if (approvedRole.includes('เจ้าหน้าที่')) {
+                        badgeClass = 'bg-red-100 text-red-800 border-red-200';
+                    } else if (approvedRole.includes('อาสาสมัคร')) {
+                        badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+                    } else if (approvedRole.includes('แนวกันไฟ') || approvedRole.includes('ร่วมทำแนว')) {
+                        badgeClass = 'bg-green-100 text-green-800 border-green-200';
+                    } else if (approvedRole.includes('สนับสนุน') || approvedRole.includes('ส่งกำลัง')) {
+                        badgeClass = 'bg-blue-100 text-blue-800 border-blue-200';
+                    } else {
+                        badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
+                        if(approvedRole === 'ไม่ได้ระบุ') badgeText = 'เหมาะกับการเป็น... (ไม่ได้ระบุ)';
+                    }
+                }
+
+                let sys = item.pre_sys, dia = item.pre_dia, pulse = item.pre_pulse;
                         
                         // 4. ดึงข้อมูลความดันและชีพจรตาม Phase (ดักไว้รองรับปี 69 ด้วย)
                         const sysVal = row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null;
