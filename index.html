@@ -46,11 +46,13 @@
 </head>
 <body class="antialiased min-h-screen flex flex-col relative">
 
+    <!-- Loading Screen -->
     <div id="loadingOverlay" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
         <i data-lucide="loader-2" class="w-10 h-10 text-brand-900 animate-spin mb-4"></i>
         <p class="text-brand-900 font-medium">กำลังโหลดและผสานข้อมูลจาก Google Sheets...</p>
     </div>
 
+    <!-- Header -->
     <header class="bg-brand-900 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -90,10 +92,12 @@
                         <button id="phaseAll" class="px-3 py-1 rounded-sm bg-brand-500/20 text-white transition-colors" onclick="setPhase('all')">ภาพรวม</button>
                     </div>
                 </div>
+                <div class="text-sm text-brand-100 hidden lg:block" id="lastUpdatedText">อัปเดตข้อมูลล่าสุด: กำลังดึงข้อมูล...</div>
             </div>
         </div>
     </header>
 
+    <!-- Commander View (Dashboard) -->
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full view-commander">
         <div id="mismatchAlert" class="hidden mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-card fade-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-start gap-3">
@@ -178,6 +182,7 @@
             </div>
         </div>
 
+        <!-- ตารางรายชื่อ -->
         <div class="bg-white rounded-xl shadow-card border border-slate-100 overflow-hidden">
             <div class="p-5 border-b border-slate-200 bg-brand-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 class="text-lg font-semibold text-brand-900 flex items-center gap-2">
@@ -222,7 +227,7 @@
         </div>
     </main>
 
-    <!-- Volunteer View -->
+    <!-- Volunteer View (Individual Passport) -->
     <main class="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-8 w-full view-volunteer">
         <div class="text-center mb-8 fade-in">
             <h2 class="text-2xl font-bold text-brand-900 mb-2">Personal Health Passport</h2>
@@ -430,13 +435,11 @@
                 const mergeData = (data, year, phase) => {
                     if (!data || data.length === 0) return;
                     data.forEach(row => {
-                        
-                        // ฟังก์ชันช่วยจัดการหัวคอลัมน์ที่เว้นวรรคผิด
+                        // 🌟 ฟังก์ชันช่วยดึงข้อมูลแบบยืดหยุ่น (ตัดช่องว่างที่แอบซ่อนอยู่ในหัวคอลัมน์ทิ้งอัตโนมัติ)
                         const getVal = (keys) => {
-                            const rowKeys = Object.keys(row);
-                            for (let k of keys) {
-                                const exact = rowKeys.find(rk => rk.replace(/[\uFEFF\s]+/g, '').toLowerCase() === k.replace(/[\uFEFF\s]+/g, '').toLowerCase());
-                                if (exact && row[exact] !== undefined && row[exact] !== null) {
+                            for(let k of keys) {
+                                const exact = Object.keys(row).find(key => key.trim() === k);
+                                if(exact && row[exact] !== undefined && row[exact] !== null) {
                                     const v = row[exact].toString().trim();
                                     if (v !== '' && v !== '-') return v;
                                 }
@@ -444,13 +447,13 @@
                             return null;
                         };
 
-                        const rawName = getVal(['ชื่อ-สกุล', 'ชื่อ', 'ชื่อสกุล']);
-                        if (!rawName) return;
-                        
+                        const rawName = getVal(['ชื่อ-สกุล', 'ชื่อ', 'ชื่อ สกุล']);
+                        if (!rawName) return; 
+
                         const name = cleanName(rawName);
                         if (!name) return;
                         
-                        let id = getVal(['เลขบัตรประชาชน', 'ID', 'เลขบัตร']) || 'ไม่มีระบุ';
+                        const id = getVal(['เลขบัตรประชาชน', 'ID']) || 'ไม่มีระบุ';
                         const hnVal = getVal(['HN']);
                         const key = `${year}_${normalizeKey(rawName)}`;
 
@@ -471,7 +474,7 @@
                         const ageVal = getVal(['อายุ']);
                         if (ageVal) user.age = parseInt(ageVal);
                         
-                        const bmiVal = getVal(['BMI', 'ดัชนีมวลกาย']);
+                        const bmiVal = getVal(['BMI']);
                         if (bmiVal) user.bmi = parseFloat(bmiVal);
                         
                         const condVal = getVal(['โรคประจำตัว']);
@@ -486,7 +489,7 @@
                         const sysVal = getVal(['ความดันตัวบน']);
                         const diaVal = getVal(['ความดันตัวล่าง']);
                         const pulseVal = getVal(['ชีพจร']);
-                        const verdictVal = getVal(['ผลการตรวจสุขภาพจากแพทย์', 'ผลการตรวจ']);
+                        const verdictVal = getVal(['ผลการตรวจสุขภาพจากแพทย์']);
 
                         if (phase === 'pre') {
                             if (sysVal !== null) user.pre_sys = parseInt(sysVal);
@@ -499,7 +502,7 @@
                             if (pulseVal !== null) user.post_pulse = parseInt(pulseVal);
                             if (verdictVal) user.post_verdict = verdictVal;
                             
-                            const diagStr = getVal(['ความผิดปกติจากการวินิจฉัย', 'อาการหลังภารกิจ', 'อาการ']);
+                            const diagStr = getVal(['ความผิดปกติจากการวินิจฉัย']);
                             if (diagStr && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
                                 const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
                                 user.post_diag = [...new Set([...user.post_diag, ...diags])];
@@ -913,7 +916,6 @@
             document.getElementById('loginModal').classList.add('hidden'); 
             document.getElementById('passwordInput').value = ''; 
             document.getElementById('passwordError').classList.add('hidden');
-            if (!isAuthenticated) executeSwitchView('volunteer');
         };
 
         const populateVolunteerPassport = (user) => {
