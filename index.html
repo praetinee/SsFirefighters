@@ -110,9 +110,9 @@
                     </div>
                     <div class="h-6 w-px bg-brand-500/30"></div>
                     <div class="flex items-center bg-brand-900 rounded-md p-0.5 border border-brand-500/30 text-sm">
-                        <button id="phaseAll" class="px-3 py-1 rounded-sm bg-brand-500/20 text-white transition-colors" onclick="setPhase('all')">ภาพรวม</button>
                         <button id="phasePre" class="px-3 py-1 rounded-sm text-brand-100 hover:text-white transition-colors" onclick="setPhase('pre')">ก่อนภารกิจ</button>
                         <button id="phasePost" class="px-3 py-1 rounded-sm text-brand-100 hover:text-white transition-colors" onclick="setPhase('post')">หลังภารกิจ</button>
+                        <button id="phaseAll" class="px-3 py-1 rounded-sm bg-brand-500/20 text-white transition-colors" onclick="setPhase('all')">ภาพรวม</button>
                     </div>
                 </div>
                 <div class="text-sm text-brand-100 hidden lg:block" id="lastUpdatedText">
@@ -139,7 +139,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white rounded-xl p-5 shadow-card border border-slate-100 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-slate-500 mb-1">กำลังพลทั้งหมด</p>
+                    <p id="kpiTotalLabel" class="text-sm font-medium text-slate-500 mb-1">กำลังพลที่เข้ารับการตรวจ</p>
                     <div class="flex items-baseline gap-2">
                         <h2 id="kpiTotal" class="text-3xl font-bold font-inter text-brand-900">0</h2>
                         <span class="text-sm text-slate-500">นาย</span>
@@ -567,10 +567,32 @@ const fetchSheet = (gid) => {
         };
 
         const updateKPIs = (data) => {
-            const total = data.length;
-            const frontline = data.filter(d => d.status === 'Ready').length;
-            const support = data.filter(d => d.status === 'Conditional').length;
-            const referral = data.filter(d => d.status === 'Referral').length;
+            // 1. กรองเฉพาะคนที่มีข้อมูลการตรวจในรอบนั้นจริงๆ
+            let validData = data;
+            let phaseText = '';
+            
+            if (state.phase === 'pre') {
+                validData = data.filter(d => d.pre_sys !== null || d.pre_verdict !== null);
+                phaseText = 'ก่อนภารกิจ';
+            } else if (state.phase === 'post') {
+                validData = data.filter(d => d.post_sys !== null || d.post_verdict !== null || (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ'));
+                phaseText = 'หลังภารกิจ';
+            } else {
+                phaseText = 'ภาพรวม';
+            }
+
+            // 2. คำนวณยอดจากผู้ที่มีข้อมูลจริง
+            const total = validData.length;
+            const frontline = validData.filter(d => d.status === 'Ready').length;
+            const support = validData.filter(d => d.status === 'Conditional').length;
+            const referral = validData.filter(d => d.status === 'Referral').length;
+
+            // 3. ปรับเปลี่ยนข้อความ Label ให้ระบุ ปี และ รอบ
+            const yearText = state.year === 'all' ? 'ทุกปี' : `ปี ${state.year}`;
+            const labelEl = document.getElementById('kpiTotalLabel');
+            if (labelEl) {
+                labelEl.innerText = `กำลังพลที่ตรวจ (${yearText} ${phaseText})`;
+            }
 
             document.getElementById('kpiTotal').innerText = total;
             document.getElementById('kpiFrontline').innerText = frontline;
