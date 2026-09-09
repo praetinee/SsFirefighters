@@ -439,142 +439,23 @@
             return s;
         };
 
-        const loadGoogleSheetsData = async () => {
-            const fetchSheet = (gid) => {
-                return new Promise((resolve) => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`;
-                    Papa.parse(url, {
-                        download: true, header: true, skipEmptyLines: true,
-                        complete: (results) => resolve(results.data),
-                        error: (error) => { console.error(`Error gid=${gid}:`, error); resolve([]); }
-                    });
-                });
-            };
-
-            try {
-                // ดึงข้อมูลทั้ง 3 ชีต
-                const [sheet68Post, sheet69Pre, sheet69Post] = await Promise.all([
-                    fetchSheet('2028719085'), // 68 หลัง
-                    fetchSheet('440652878'),  // 69 ก่อน
-                    fetchSheet('1290943524')  // 69 หลัง
-                ]);
-
-                const mergedUsers = {};
-
-                const mergeData = (data, year, phase) => {
-                    if (!data || data.length === 0) return;
-                    data.forEach(row => {
-                        const rawName = row['ชื่อ-สกุล'] ? row['ชื่อ-สกุล'].trim() : null;
-                        if (!rawName || rawName === '-') return;
-                        
-                        const name = cleanName(rawName);
-                        if (!name) return;
-                        
-                        let id = row['เลขบัตรประชาชน'] ? row['เลขบัตรประชาชน'].trim() : 'ไม่มีระบุ';
-                        const key = `${year}_${normalizeKey(rawName)}`;
-
-                        if (!mergedUsers[key]) {
-                            mergedUsers[key] = {
-                                id: id, hn: null, name: name, rawName: rawName, year: year, age: null, bmi: null,
-                                pre_cond: 'ไม่มี', raw_role: 'ไม่ได้ระบุ', chosen_role: 'None', 
-                                pre_sys: null, pre_dia: null, pre_pulse: null,
-                                post_sys: null, post_dia: null, post_pulse: null,
-                                pre_verdict: null, post_verdict: null, post_diag: []
-                            };
-                        }
-                        
-                        const user = mergedUsers[key];
-                        
-                        const hnVal = row['HN'];
-                        if (hnVal && hnVal.trim() !== '-' && hnVal.trim() !== '') user.hn = hnVal.trim();
-                        
-                        if (row['อายุ']) user.age = parseInt(row['อายุ']);
-                        if (row['BMI']) user.bmi = parseFloat(row['BMI']);
-                        if (row['โรคประจำตัว'] && row['โรคประจำตัว'].trim() !== '-') user.pre_cond = row['โรคประจำตัว'].trim();
-
-                        const roleVal = row['เข้าร่วมภารกิจ'];
-                        if (roleVal && roleVal.trim() !== '-' && roleVal.trim() !== '') {
-                            const rStr = roleVal.toString().trim();
-                            user.raw_role = rStr;
-                            user.chosen_role = (rStr.includes('สนับสนุน') || rStr.includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
-                        }
-                        
-                        const sysVal = row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null;
-                        const diaVal = row['ความดันตัวล่าง'] ? parseInt(row['ความดันตัวล่าง']) : null;
-                        const pulseVal = row['ชีพจร'] ? parseInt(row['ชีพจร']) : null;
-                        const verdictVal = row['ผลการตรวจสุขภาพจากแพทย์'] ? row['ผลการตรวจสุขภาพจากแพทย์'].trim() : null;
-
-                        if (phase === 'pre') {
-                            if (sysVal !== null) user.pre_sys = sysVal;
-                            if (diaVal !== null) user.pre_dia = diaVal;
-                            if (pulseVal !== null) user.pre_pulse = pulseVal;
-                            if (verdictVal) user.pre_verdict = verdictVal;
-                        } else if (phase === 'post') {
-                            if (sysVal !== null) user.post_sys = sysVal;
-                            if (diaVal !== null) user.post_dia = diaVal;
-                            if (pulseVal !== null) user.post_pulse = pulseVal;
-                            if (verdictVal) user.post_verdict = verdictVal;
-                            
-                            const diagStr = row['ความผิดปกติจากการวินิจฉัย'] ? row['ความผิดปกติจากการวินิจฉัย'].trim() : null;
-                            if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
-                                const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
-                                user.post_diag = [...new Set([...user.post_diag, ...diags])];
-                            }
-                        }
-                    });
-                };
-
-                mergeData(sheet68Post, '2568', 'post');
-                mergeData(sheet69Pre, '2569', 'pre');
-                mergeData(sheet69Post, '2569', 'post');
-
-                const classifyVerdict = (text) => {
-                    if (!text) return null;
-                    const t = text.toString();
-                    if (t.includes('ไม่สามารถ')) return 'Referral';
-                    if (t.includes('ควบคุม') || t.includes('ต้องตรวจ') || t.includes('ควรตรวจ') || t.includes('ระวัง') || t.includes('ส่งตรวจ') || t.includes('ข้อจำกัด')) return 'Conditional';
-                    if (t.includes('เหมาะสมกับภารกิจ') || t.includes('ทำงานดับไฟป่าได้') || t === 'ปกติ') return 'Ready';
-                    return null; 
-                };
-
-                const finalData = Object.values(mergedUsers).map(user => {
-                    const stat = classifyVerdict(user.post_verdict) || classifyVerdict(user.pre_verdict);
-                    
-                    if (stat) {
-                        user.status = stat;
-                    } else {
-                        user.status = 'Ready';
-                        const evalSys = user.post_sys !== null ? user.post_sys : (user.pre_sys !== null ? user.pre_sys : 0);
-                        const evalDia = user.post_dia !== null ? user.post_dia : (user.pre_dia !== null ? user.pre_dia : 0);
-                        const evalAge = user.age || 0;
-                        const evalBmi = user.bmi || 0;
-                        
-                        if (evalSys >= 180 || evalDia >= 110) {
-                            user.status = 'Referral';
-                        } else if ((evalSys > 150) || (evalAge > 60) || (evalBmi > 30) || (user.pre_cond && user.pre_cond !== 'ไม่มี' && user.pre_cond !== '-')) {
-                            user.status = 'Conditional';
-                        }
-                    }
-
-                    if (user.status === 'Ready' && user.chosen_role === 'Support') {
-                        user.status = 'Conditional';
-                    }
-                    
-                    user.recommended_role = user.status === 'Referral' ? 'Medical' : (user.status === 'Conditional' ? 'Support' : 'Frontline');
-                    user.mismatch = (user.chosen_role === 'Frontline' && user.recommended_role !== 'Frontline');
-                    if (!user.pre_cond || user.pre_cond === '-') user.pre_cond = 'ไม่มี';
-                    if (user.post_diag.length === 0) user.post_diag = ['ปกติ'];
-                    
-                    return user;
-                });
+        const getFilteredData = () => {
+            return appData.filter(item => {
+                const matchYear = state.year === 'all' || item.year === state.year;
+                const matchSearch = item.name.toLowerCase().includes(state.search.toLowerCase()) || item.id.toLowerCase().includes(state.search.toLowerCase());
+                const matchRole = state.filterRole === 'all' || item.chosen_role === state.filterRole;
+                const matchStatus = state.filterStatus === 'all' || item.status === state.filterStatus;
                 
-                finalData.sort((a,b) => a.name.localeCompare(b.name, 'th'));
-                return finalData;
-
-            } catch (err) { 
-                console.error("Error:", err); 
-                return []; 
-            }
+                // ตรวจสอบ Phase ตามที่เลือกบนเมนู
+                let matchPhase = true;
+                if (state.phase === 'pre') {
+                    matchPhase = (item.year === '2569' && (item.pre_sys !== null || item.pre_verdict !== null));
+                } else if (state.phase === 'post') {
+                    matchPhase = (item.post_sys !== null || item.post_verdict !== null || (item.post_diag && item.post_diag.length > 0 && item.post_diag[0] !== 'ปกติ'));
+                }
+                
+                return matchYear && matchSearch && matchRole && matchStatus && matchPhase;
+            });
         };
 
         const populateYears = () => {
