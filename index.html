@@ -440,10 +440,24 @@
             const fetchSheet = (gid) => {
                 return new Promise((resolve) => {
                     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`;
+                    
+                    // ตั้งเวลา Time-out ป้องกันการค้าง (10 วินาที)
+                    const timeoutId = setTimeout(() => {
+                        console.warn(`ดึงข้อมูลชีต ${gid} นานเกินไป (Timeout)`);
+                        resolve([]);
+                    }, 10000);
+
                     Papa.parse(url, {
                         download: true, header: true, skipEmptyLines: true,
-                        complete: (results) => resolve(results.data),
-                        error: (error) => { console.error(`ไม่สามารถดึงชีต gid=${gid}:`, error); resolve([]); }
+                        complete: (results) => { 
+                            clearTimeout(timeoutId); 
+                            resolve(results.data); 
+                        },
+                        error: (error) => { 
+                            clearTimeout(timeoutId); 
+                            console.error(`ไม่สามารถดึงชีต gid=${gid}:`, error); 
+                            resolve([]); 
+                        }
                     });
                 });
             };
@@ -1204,10 +1218,13 @@
         const closeModal = () => { document.getElementById('detailModal').classList.add('hidden'); };
 
         document.addEventListener('DOMContentLoaded', async () => {
-            lucide.createIcons();
             const overlay = document.getElementById('loadingOverlay');
             
             try {
+                // ป้องกัน Error กรณีสคริปต์ไอคอนโหลดไม่สมบูรณ์
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
                 appData = await loadGoogleSheetsData();
                 const now = new Date();
                 const lastUpdatedEl = document.getElementById('lastUpdatedText');
