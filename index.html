@@ -282,7 +282,12 @@
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <h3 id="vp-name" class="text-xl font-bold text-brand-900 font-inter">ชื่อ-สกุล</h3>
-                        <p class="text-slate-500 text-sm">รหัสอาสา: <span id="vp-id" class="font-inter">HN-XXXX</span> • อายุ: <span id="vp-age" class="font-inter">XX</span> ปี</p>
+                        <p class="text-slate-500 text-sm flex flex-wrap items-center gap-1">
+                            รหัสอาสา: <span id="vp-id" class="font-inter">HN-XXXX</span> 
+                            <span id="vp-id-warning" class="text-amber-600 hidden text-[10px] font-medium bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><i data-lucide="alert-triangle" class="w-3 h-3 inline"></i> ข้อมูลขัดแย้ง</span> 
+                            • อายุ: <span id="vp-age" class="font-inter">XX</span> ปี 
+                            • โรคประจำตัว: <span id="vp-cond-header" class="font-medium text-brand-900">ไม่มี</span>
+                        </p>
                     </div>
                 </div>
                 <div id="vp-message-box" class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm">
@@ -936,9 +941,36 @@
         };
 
         const populateVolunteerPassport = (user) => {
+            // ดึงข้อมูลย้อนหลังเพื่อหาอายุจากปีล่าสุด และจัดการรหัสบัตร
+            const userNormKey = normalizeKey(user.rawName);
+            const userHistoryForId = appData.filter(d => normalizeKey(d.rawName) === userNormKey)
+                                            .sort((a, b) => parseInt(a.year) - parseInt(b.year));
+            const latestRecord = userHistoryForId[userHistoryForId.length - 1];
+
+            // รวบรวมเลขบัตรจากทุกปี เผื่อบางปีลืมใส่
+            const allIds = userHistoryForId.map(d => d.id).filter(id => id && id !== 'ไม่มีระบุ' && id !== '-');
+            const uniqueIds = [...new Set(allIds)];
+            
+            let finalIdToDisplay = 'ไม่มีระบุ';
+            const idWarning = document.getElementById('vp-id-warning');
+            
+            if (uniqueIds.length === 1) {
+                finalIdToDisplay = maskID(uniqueIds[0]);
+                if (idWarning) idWarning.classList.add('hidden');
+            } else if (uniqueIds.length > 1) {
+                finalIdToDisplay = maskID(uniqueIds[0]); // แสดงอันแรกที่เจอ
+                if (idWarning) idWarning.classList.remove('hidden'); // แจ้งเตือนเลขบัตรขัดแย้ง
+            } else {
+                if (idWarning) idWarning.classList.add('hidden');
+            }
+
             document.getElementById('vp-name').innerText = user.name;
-            document.getElementById('vp-id').innerText = maskID(user.id);
-            document.getElementById('vp-age').innerText = user.age !== null ? user.age : '-';
+            document.getElementById('vp-id').innerText = finalIdToDisplay;
+            // ใช้อายุและโรคประจำตัวจากข้อมูลปีล่าสุดเสมอ
+            document.getElementById('vp-age').innerText = latestRecord.age !== null ? latestRecord.age : '-';
+            if (document.getElementById('vp-cond-header')) {
+                document.getElementById('vp-cond-header').innerText = latestRecord.pre_cond || 'ไม่มี';
+            }
             
             const sys = user.pre_sys !== null ? user.pre_sys : (user.post_sys !== null ? user.post_sys : '-');
             const dia = user.pre_dia !== null ? user.pre_dia : (user.post_dia !== null ? user.post_dia : '-');
