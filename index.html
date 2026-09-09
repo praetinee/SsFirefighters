@@ -95,7 +95,7 @@
                         <i data-lucide="shield-check" class="w-4 h-4"></i><span class="hidden md:inline">แพทย์/ผบ.</span>
                     </button>
                     <button id="btnVolunteerView" class="px-3 py-1.5 rounded-md text-brand-100 hover:text-white transition-colors flex items-center gap-2" onclick="switchView('volunteer')">
-                        <i data-lucide="user" class="w-4 h-4"></i><span class="hidden md:inline">อาสาสมัคร</span>
+                        <i data-lucide="user" class="w-4 h-4"></i><span class="hidden md:inline">ข้อมูลอาสาฯรายบุคคล</span>
                     </button>
                 </div>
             </div>
@@ -310,6 +310,38 @@
             </div>
             <div class="bg-slate-50 p-4 border-t border-slate-100 text-center text-xs text-slate-400">ข้อมูลอัปเดตล่าสุดจากการตรวจก่อนปฏิบัติภารกิจ</div>
         </div>
+
+        <!-- ส่วน Dashboard ย้อนหลังรายบุคคล -->
+        <div id="volunteerHistorySection" class="mt-6 bg-white rounded-2xl shadow-soft p-6 border border-slate-100 fade-in hidden">
+            <h3 class="text-lg font-bold text-brand-900 mb-4 flex items-center gap-2">
+                <i data-lucide="history" class="w-5 h-5 text-brand-500"></i> ประวัติสุขภาพและภารกิจย้อนหลัง
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="border border-slate-100 rounded-lg p-4 bg-slate-50">
+                    <h4 class="text-sm font-semibold text-slate-600 mb-2">แนวโน้ม BMI</h4>
+                    <div class="relative h-48 w-full"><canvas id="vpChartBMI"></canvas></div>
+                </div>
+                <div class="border border-slate-100 rounded-lg p-4 bg-slate-50">
+                    <h4 class="text-sm font-semibold text-slate-600 mb-2">แนวโน้มความดันโลหิต</h4>
+                    <div class="relative h-48 w-full"><canvas id="vpChartBP"></canvas></div>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-sm font-semibold text-slate-600 mb-2">ประวัติภารกิจที่เลือก</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-500">
+                                <th class="p-2 font-medium border-b">ปีงบประมาณ</th>
+                                <th class="p-2 font-medium border-b">ภารกิจที่ลงทะเบียน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vpRoleHistoryBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div class="mt-8 text-center">
             <button onclick="switchView('commander')" class="text-brand-500 hover:text-brand-900 text-sm flex items-center justify-center gap-2 mx-auto transition-colors">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับสู่หน้าผู้บัญชาการ
@@ -834,7 +866,8 @@
         };
 
         const switchView = (viewType) => {
-            if (viewType === 'commander' && !isAuthenticated) {
+            // ไม่ว่าจะกดปุ่มไหน หากยังไม่ยืนยันตัวตน ให้แสดงหน้าล็อกอินเสมอ
+            if (!isAuthenticated) {
                 document.getElementById('loginModal').classList.remove('hidden');
                 document.getElementById('passwordInput').focus();
                 return;
@@ -919,6 +952,62 @@
                 msgText.innerHTML = `ผลการตรวจร่างกายของท่านอยู่ในเกณฑ์ <strong class="text-red-900">เฝ้าระวัง</strong> ขอให้ท่านงดการปฏิบัติภารกิจภาคสนามทุกประเภทในครั้งนี้ และเข้ารับการตรวจรักษาจากทีมแพทย์ศูนย์ฯ`;
                 recList.innerHTML = `<li class="flex gap-2"><i data-lucide="stethoscope" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> โปรดติดต่อเต็นท์พยาบาลเพื่อตรวจเช็คสัญญาณชีพซ้ำและรับคำปรึกษา</li><li class="flex gap-2"><i data-lucide="bed" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> นอนหลับพักผ่อนให้เพียงพอ และงดเครื่องดื่มชูกำลัง/คาเฟอีน</li>`;
             }
+
+            // ---- ส่วนสร้าง Dashboard ย้อนหลัง ----
+            const histSection = document.getElementById('volunteerHistorySection');
+            histSection.classList.remove('hidden');
+
+            // 1. ค้นหาข้อมูลของอาสาคนนี้ย้อนหลังในทุกปีที่มี
+            const userNormKey = normalizeKey(user.rawName);
+            const userHistory = appData.filter(d => normalizeKey(d.rawName) === userNormKey)
+                                       .sort((a, b) => parseInt(a.year) - parseInt(b.year)); 
+
+            const years = userHistory.map(d => d.year);
+            const bmis = userHistory.map(d => d.bmi);
+            const sysData = userHistory.map(d => d.post_sys !== null ? d.post_sys : d.pre_sys);
+            const diaData = userHistory.map(d => d.post_dia !== null ? d.post_dia : d.pre_dia);
+
+            // 2. เคลียร์กราฟเก่า (ถ้ามี) เพื่อสร้างใหม่
+            if (state.charts.vpBMI) state.charts.vpBMI.destroy();
+            if (state.charts.vpBP) state.charts.vpBP.destroy();
+
+            // 3. วาดกราฟ BMI
+            const ctxBMI = document.getElementById('vpChartBMI').getContext('2d');
+            state.charts.vpBMI = new Chart(ctxBMI, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{ label: 'BMI', data: bmis, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false} } }
+            });
+
+            // 4. วาดกราฟความดันโลหิต
+            const ctxBP = document.getElementById('vpChartBP').getContext('2d');
+            state.charts.vpBP = new Chart(ctxBP, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [
+                        { label: 'ตัวบน (Sys)', data: sysData, borderColor: '#b91c1c', backgroundColor: '#b91c1c', tension: 0.3 },
+                        { label: 'ตัวล่าง (Dia)', data: diaData, borderColor: '#1d4ed8', backgroundColor: '#1d4ed8', tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 5. แสดงประวัติภารกิจในตาราง
+            const tbody = document.getElementById('vpRoleHistoryBody');
+            tbody.innerHTML = '';
+            userHistory.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-2 text-slate-700">${d.year}</td>
+                    <td class="p-2 text-slate-700 font-medium">${d.raw_role || 'ไม่ได้ระบุ'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
             lucide.createIcons();
         };
 
