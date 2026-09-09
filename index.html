@@ -338,6 +338,7 @@
                         <thead>
                             <tr class="bg-slate-100 text-slate-500">
                                 <th class="p-2 font-medium border-b">ปีงบประมาณ</th>
+                                <th class="p-2 font-medium border-b">ช่วงเวลา</th>
                                 <th class="p-2 font-medium border-b">ภารกิจที่ลงทะเบียน</th>
                             </tr>
                         </thead>
@@ -1039,12 +1040,38 @@
             const tbody = document.getElementById('vpRoleHistoryBody');
             tbody.innerHTML = '';
             userHistory.forEach(d => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="p-2 text-slate-700">${d.year}</td>
-                    <td class="p-2 text-slate-700 font-medium">${d.raw_role || 'ไม่ได้ระบุ'}</td>
-                `;
-                tbody.appendChild(tr);
+                const hasPre = d.pre_sys !== null || d.pre_verdict !== null;
+                const hasPost = d.post_sys !== null || d.post_verdict !== null || (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ');
+                
+                if (hasPre) {
+                    const trPre = document.createElement('tr');
+                    trPre.innerHTML = `
+                        <td class="p-2 text-slate-700">${d.year}</td>
+                        <td class="p-2 text-slate-700">ก่อนภารกิจ</td>
+                        <td class="p-2 text-slate-700 font-medium">${d.raw_role || 'ไม่ได้ระบุ'}</td>
+                    `;
+                    tbody.appendChild(trPre);
+                }
+                
+                if (hasPost) {
+                    const trPost = document.createElement('tr');
+                    trPost.innerHTML = `
+                        <td class="p-2 text-slate-700">${d.year}</td>
+                        <td class="p-2 text-slate-700 text-brand-500">หลังภารกิจ</td>
+                        <td class="p-2 text-slate-700 font-medium">${d.raw_role || 'ไม่ได้ระบุ'}</td>
+                    `;
+                    tbody.appendChild(trPost);
+                }
+                
+                if (!hasPre && !hasPost) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="p-2 text-slate-700">${d.year}</td>
+                        <td class="p-2 text-slate-700 text-slate-400">ลงทะเบียน</td>
+                        <td class="p-2 text-slate-700 font-medium">${d.raw_role || 'ไม่ได้ระบุ'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
             });
 
             lucide.createIcons();
