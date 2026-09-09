@@ -961,7 +961,14 @@
                 badgeEl.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i><span class="text-green-700">พร้อมปฏิบัติหน้าที่</span>`;
                 badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-green-200";
                 msgBox.className = "bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm";
-                msgText.innerHTML = `ท่านได้รับการรับรองความพร้อมสำหรับ: <strong class="text-green-900">ทุกภารกิจ รวมถึงภารกิจแนวหน้าผจญเพลิง</strong> เพื่อความปลอดภัยสูงสุด ขอให้ท่านปฏิบัติตามกฎความปลอดภัยอย่างเคร่งครัด`;
+                
+                // ตรวจสอบว่าอาสาสมัครได้ระบุภารกิจไว้หรือไม่
+                if (user.raw_role === 'ไม่ได้ระบุ' || !user.raw_role) {
+                    msgText.innerHTML = `ท่านได้รับการรับรองความพร้อมสำหรับภารกิจที่ท่านเลือก เพื่อความปลอดภัยสูงสุด ขอให้ท่านปฏิบัติตามกฎความปลอดภัยอย่างเคร่งครัด`;
+                } else {
+                    msgText.innerHTML = `ท่านได้รับการรับรองความพร้อมสำหรับ: <strong class="text-green-900">ทุกภารกิจ รวมถึงภารกิจแนวหน้าผจญเพลิง</strong> เพื่อความปลอดภัยสูงสุด ขอให้ท่านปฏิบัติตามกฎความปลอดภัยอย่างเคร่งครัด`;
+                }
+                
                 recList.innerHTML = `<li class="flex gap-2"><i data-lucide="droplets" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> ดื่มน้ำให้เพียงพอ 3-4 ลิตรต่อวันระหว่างปฏิบัติงาน</li><li class="flex gap-2"><i data-lucide="wind" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> สวมหน้ากาก N95 ตลอดเวลาในพื้นที่ควันหนาแน่น</li>`;
             } else if (user.status === 'Conditional') {
                 badgeEl.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i><span class="text-amber-700">เหมาะสมกับงานสนับสนุน</span>`;
