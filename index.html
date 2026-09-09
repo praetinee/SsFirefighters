@@ -441,24 +441,29 @@
                 return new Promise((resolve) => {
                     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`;
                     
-                    // ตั้งเวลา Time-out ป้องกันการค้าง (10 วินาที)
+                    // ตั้ง Timeout 8 วินาที ป้องกันการรอข้อมูลแบบไม่มีที่สิ้นสุด
                     const timeoutId = setTimeout(() => {
                         console.warn(`ดึงข้อมูลชีต ${gid} นานเกินไป (Timeout)`);
-                        resolve([]);
-                    }, 10000);
+                        resolve([]); 
+                    }, 8000);
 
-                    Papa.parse(url, {
-                        download: true, header: true, skipEmptyLines: true,
-                        complete: (results) => { 
-                            clearTimeout(timeoutId); 
-                            resolve(results.data); 
-                        },
-                        error: (error) => { 
-                            clearTimeout(timeoutId); 
-                            console.error(`ไม่สามารถดึงชีต gid=${gid}:`, error); 
-                            resolve([]); 
-                        }
-                    });
+                    try {
+                        Papa.parse(url, {
+                            download: true, header: true, skipEmptyLines: true,
+                            complete: (results) => { 
+                                clearTimeout(timeoutId); 
+                                resolve(results.data); 
+                            },
+                            error: (error) => { 
+                                clearTimeout(timeoutId); 
+                                console.error(`ไม่สามารถดึงชีต gid=${gid}:`, error); 
+                                resolve([]); 
+                            }
+                        });
+                    } catch (err) {
+                        clearTimeout(timeoutId);
+                        resolve([]);
+                    }
                 });
             };
 
@@ -1221,10 +1226,11 @@
             const overlay = document.getElementById('loadingOverlay');
             
             try {
-                // ป้องกัน Error กรณีสคริปต์ไอคอนโหลดไม่สมบูรณ์
+                // ย้ายมาไว้ข้างใน เพื่อป้องกัน Error ทำให้แอปหยุดทำงาน
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
+
                 appData = await loadGoogleSheetsData();
                 const now = new Date();
                 const lastUpdatedEl = document.getElementById('lastUpdatedText');
@@ -1235,13 +1241,17 @@
                     document.getElementById('loginModal').classList.remove('hidden');
                     document.getElementById('passwordInput').focus();
                 } else {
-                    alert("ไม่พบข้อมูล หรือเกิดข้อผิดพลาดในการเชื่อมต่อกับ Google Sheets");
+                    alert("ไม่พบข้อมูล! โปรดตรวจสอบว่าไฟล์ Google Sheets ได้ตั้งค่าการแชร์เป็น 'ทุกคนที่มีลิงก์ (Anyone with the link)' หรือไม่");
                 }
             } catch (e) {
                 console.error(e);
+                alert("เกิดข้อผิดพลาดในการประมวลผลข้อมูล");
             } finally {
-                overlay.style.opacity = '0';
-                setTimeout(() => { overlay.style.display = 'none'; }, 300);
+                // บังคับปิดหน้าโหลดเสมอ ไม่ว่าจะดึงข้อมูลสำเร็จหรือไม่
+                if (overlay) {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => { overlay.style.display = 'none'; }, 300);
+                }
             }
         });
     </script>
