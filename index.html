@@ -5,27 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบริหารจัดการสุขภาพและจัดสรรกำลังพลอาสาสมัครดับไฟป่า</title>
     
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Prompt', 'sans-serif'], inter: ['Inter', 'sans-serif'] },
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                    },
                     colors: {
-                        brand: { 50: '#f8fafc', 100: '#f1f5f9', 500: '#64748b', 800: '#1e293b', 900: '#0f172a' },
-                        accent: { 500: '#f97316', 700: '#c2410c' },
-                        status: { ready: '#15803d', conditional: '#b45309', referral: '#b91c1c' }
+                        brand: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            500: '#64748b',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        },
+                        accent: {
+                            500: '#f97316',
+                            700: '#c2410c',
+                        },
+                        status: {
+                            ready: '#15803d',
+                            conditional: '#b45309',
+                            referral: '#b91c1c',
+                        }
                     }
                 }
             }
         }
     </script>
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- PapaParse สำหรับอ่าน Google Sheets CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
@@ -92,12 +117,14 @@
                         <button id="phaseAll" class="px-3 py-1 rounded-sm bg-brand-500/20 text-white transition-colors" onclick="setPhase('all')">ภาพรวม</button>
                     </div>
                 </div>
-                <div class="text-sm text-brand-100 hidden lg:block" id="lastUpdatedText">อัปเดตข้อมูลล่าสุด: กำลังดึงข้อมูล...</div>
+                <div class="text-sm text-brand-100 hidden lg:block" id="lastUpdatedText">
+                    อัปเดตข้อมูลล่าสุด: กำลังดึงข้อมูล...
+                </div>
             </div>
         </div>
     </header>
 
-    <!-- Commander View (Dashboard) -->
+    <!-- Commander View -->
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full view-commander">
         <div id="mismatchAlert" class="hidden mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-card fade-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-start gap-3">
@@ -182,7 +209,6 @@
             </div>
         </div>
 
-        <!-- ตารางรายชื่อ -->
         <div class="bg-white rounded-xl shadow-card border border-slate-100 overflow-hidden">
             <div class="p-5 border-b border-slate-200 bg-brand-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 class="text-lg font-semibold text-brand-900 flex items-center gap-2">
@@ -218,7 +244,8 @@
                             <th class="p-4 font-medium text-center">จัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="rosterTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                    <tbody id="rosterTableBody" class="divide-y divide-slate-100 text-sm">
+                    </tbody>
                 </table>
             </div>
             <div class="p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
@@ -227,13 +254,14 @@
         </div>
     </main>
 
-    <!-- Volunteer View (Individual Passport) -->
+    <!-- Volunteer View -->
     <main class="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-8 w-full view-volunteer">
         <div class="text-center mb-8 fade-in">
             <h2 class="text-2xl font-bold text-brand-900 mb-2">Personal Health Passport</h2>
             <p class="text-slate-500">สมุดพกสุขภาพอาสาสมัครดับไฟป่า</p>
         </div>
         
+        <!-- กล่องค้นหาข้อมูลอาสาสมัคร -->
         <div class="max-w-md mx-auto mb-6 fade-in relative">
             <div class="relative flex items-center">
                 <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3"></i>
@@ -291,6 +319,7 @@
             <div class="bg-slate-50 p-4 border-t border-slate-100 text-center text-xs text-slate-400">ข้อมูลอัปเดตล่าสุดจากการตรวจ</div>
         </div>
 
+        <!-- ส่วน Dashboard ย้อนหลังรายบุคคล -->
         <div id="volunteerHistorySection" class="mt-6 bg-white rounded-2xl shadow-soft p-6 border border-slate-100 fade-in hidden">
             <h3 class="text-lg font-bold text-brand-900 mb-4 flex items-center gap-2">
                 <i data-lucide="history" class="w-5 h-5 text-brand-500"></i> ประวัติสุขภาพและภารกิจย้อนหลัง
@@ -435,31 +464,18 @@
                 const mergeData = (data, year, phase) => {
                     if (!data || data.length === 0) return;
                     data.forEach(row => {
-                        // 🌟 ฟังก์ชันช่วยดึงข้อมูลแบบยืดหยุ่น (ตัดช่องว่างที่แอบซ่อนอยู่ในหัวคอลัมน์ทิ้งอัตโนมัติ)
-                        const getVal = (keys) => {
-                            for(let k of keys) {
-                                const exact = Object.keys(row).find(key => key.trim() === k);
-                                if(exact && row[exact] !== undefined && row[exact] !== null) {
-                                    const v = row[exact].toString().trim();
-                                    if (v !== '' && v !== '-') return v;
-                                }
-                            }
-                            return null;
-                        };
-
-                        const rawName = getVal(['ชื่อ-สกุล', 'ชื่อ', 'ชื่อ สกุล']);
-                        if (!rawName) return; 
-
+                        const rawName = row['ชื่อ-สกุล'] ? row['ชื่อ-สกุล'].trim() : null;
+                        if (!rawName || rawName === '-') return;
+                        
                         const name = cleanName(rawName);
                         if (!name) return;
                         
-                        const id = getVal(['เลขบัตรประชาชน', 'ID']) || 'ไม่มีระบุ';
-                        const hnVal = getVal(['HN']);
+                        let id = row['เลขบัตรประชาชน'] ? row['เลขบัตรประชาชน'].trim() : 'ไม่มีระบุ';
                         const key = `${year}_${normalizeKey(rawName)}`;
 
                         if (!mergedUsers[key]) {
                             mergedUsers[key] = {
-                                id: id, hn: hnVal, name: name, rawName: rawName, year: year, age: null, bmi: null,
+                                id: id, hn: null, name: name, rawName: rawName, year: year, age: null, bmi: null,
                                 pre_cond: 'ไม่มี', raw_role: 'ไม่ได้ระบุ', chosen_role: 'None', 
                                 pre_sys: null, pre_dia: null, pre_pulse: null,
                                 post_sys: null, post_dia: null, post_pulse: null,
@@ -469,41 +485,38 @@
                         
                         const user = mergedUsers[key];
                         
-                        if (!user.hn && hnVal) user.hn = hnVal;
+                        const hnVal = row['HN'];
+                        if (hnVal && hnVal.trim() !== '-' && hnVal.trim() !== '') user.hn = hnVal.trim();
                         
-                        const ageVal = getVal(['อายุ']);
-                        if (ageVal) user.age = parseInt(ageVal);
-                        
-                        const bmiVal = getVal(['BMI']);
-                        if (bmiVal) user.bmi = parseFloat(bmiVal);
-                        
-                        const condVal = getVal(['โรคประจำตัว']);
-                        if (condVal) user.pre_cond = condVal;
+                        if (row['อายุ']) user.age = parseInt(row['อายุ']);
+                        if (row['BMI']) user.bmi = parseFloat(row['BMI']);
+                        if (row['โรคประจำตัว'] && row['โรคประจำตัว'].trim() !== '-') user.pre_cond = row['โรคประจำตัว'].trim();
 
-                        const roleVal = getVal(['เข้าร่วมภารกิจ', 'ภารกิจที่เลือก', 'ภารกิจ', 'Role']);
-                        if (roleVal) {
-                            user.raw_role = roleVal;
-                            user.chosen_role = (roleVal.includes('สนับสนุน') || roleVal.includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
+                        const roleVal = row['เข้าร่วมภารกิจ'];
+                        if (roleVal && roleVal.trim() !== '-' && roleVal.trim() !== '') {
+                            const rStr = roleVal.toString().trim();
+                            user.raw_role = rStr;
+                            user.chosen_role = (rStr.includes('สนับสนุน') || rStr.includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
                         }
                         
-                        const sysVal = getVal(['ความดันตัวบน']);
-                        const diaVal = getVal(['ความดันตัวล่าง']);
-                        const pulseVal = getVal(['ชีพจร']);
-                        const verdictVal = getVal(['ผลการตรวจสุขภาพจากแพทย์']);
+                        const sysVal = row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null;
+                        const diaVal = row['ความดันตัวล่าง'] ? parseInt(row['ความดันตัวล่าง']) : null;
+                        const pulseVal = row['ชีพจร'] ? parseInt(row['ชีพจร']) : null;
+                        const verdictVal = row['ผลการตรวจสุขภาพจากแพทย์'] ? row['ผลการตรวจสุขภาพจากแพทย์'].trim() : null;
 
                         if (phase === 'pre') {
-                            if (sysVal !== null) user.pre_sys = parseInt(sysVal);
-                            if (diaVal !== null) user.pre_dia = parseInt(diaVal);
-                            if (pulseVal !== null) user.pre_pulse = parseInt(pulseVal);
+                            if (sysVal !== null) user.pre_sys = sysVal;
+                            if (diaVal !== null) user.pre_dia = diaVal;
+                            if (pulseVal !== null) user.pre_pulse = pulseVal;
                             if (verdictVal) user.pre_verdict = verdictVal;
                         } else if (phase === 'post') {
-                            if (sysVal !== null) user.post_sys = parseInt(sysVal);
-                            if (diaVal !== null) user.post_dia = parseInt(diaVal);
-                            if (pulseVal !== null) user.post_pulse = parseInt(pulseVal);
+                            if (sysVal !== null) user.post_sys = sysVal;
+                            if (diaVal !== null) user.post_dia = diaVal;
+                            if (pulseVal !== null) user.post_pulse = pulseVal;
                             if (verdictVal) user.post_verdict = verdictVal;
                             
-                            const diagStr = getVal(['ความผิดปกติจากการวินิจฉัย']);
-                            if (diagStr && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
+                            const diagStr = row['ความผิดปกติจากการวินิจฉัย'] ? row['ความผิดปกติจากการวินิจฉัย'].trim() : null;
+                            if (diagStr && diagStr !== '-' && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
                                 const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
                                 user.post_diag = [...new Set([...user.post_diag, ...diags])];
                             }
@@ -583,21 +596,21 @@
         const getFilteredData = () => {
             return appData.filter(item => {
                 const matchYear = state.year === 'all' || item.year === state.year;
-                
-                const searchLower = state.search.toLowerCase();
-                const matchSearch = (item.name || '').toLowerCase().includes(searchLower) || 
-                                    (item.id || '').toString().toLowerCase().includes(searchLower) ||
-                                    ((item.hn || '').toString().toLowerCase().includes(searchLower));
-                                    
+                const matchSearch = item.name.toLowerCase().includes(state.search.toLowerCase()) || 
+                                    item.id.toLowerCase().includes(state.search.toLowerCase()) ||
+                                    (item.hn && item.hn.toLowerCase().includes(state.search.toLowerCase()));
                 const matchRole = state.filterRole === 'all' || item.chosen_role === state.filterRole;
                 const matchStatus = state.filterStatus === 'all' || item.status === state.filterStatus;
                 
                 let matchPhase = true;
                 if (state.phase === 'pre') {
-                    matchPhase = (item.pre_sys !== null || item.pre_verdict !== null);
+                    // ตรวจสอบว่ามีข้อมูลการตรวจก่อนภารกิจ
+                    matchPhase = (item.pre_sys !== null || item.pre_pulse !== null || item.pre_verdict !== null);
                 } else if (state.phase === 'post') {
-                    matchPhase = (item.post_sys !== null || item.post_verdict !== null || (item.post_diag && item.post_diag.length > 0 && item.post_diag[0] !== 'ปกติ'));
+                    // ตรวจสอบว่ามีข้อมูลการตรวจหลังภารกิจ
+                    matchPhase = (item.post_sys !== null || item.post_pulse !== null || item.post_verdict !== null);
                 }
+                // ถ้า phase === 'all' matchPhase จะเป็น true เสมอ
 
                 return matchYear && matchSearch && matchRole && matchStatus && matchPhase;
             });
@@ -750,8 +763,15 @@
             const tbody = document.getElementById('rosterTableBody');
             tbody.innerHTML = '';
 
-            if (filteredData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium bg-slate-50">ไม่มีข้อมูลตามเงื่อนไขที่ค้นหา หรือยังไม่มีบันทึกการตรวจในรอบนี้</td></tr>`;
+            let hasDataForPhase = true;
+            if (state.phase === 'pre' && filteredData.length > 0) {
+                hasDataForPhase = filteredData.some(item => item.pre_sys !== null || item.pre_verdict !== null);
+            } else if (state.phase === 'post' && filteredData.length > 0) {
+                hasDataForPhase = filteredData.some(item => item.post_sys !== null || item.post_verdict !== null || item.post_diag.length > 0);
+            }
+
+            if (!hasDataForPhase) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium bg-slate-50">ไม่มีข้อมูล${state.phase === 'pre' ? 'ก่อน' : 'หลัง'}ปฏิบัติภารกิจสำหรับปีงบประมาณนี้</td></tr>`;
                 document.getElementById('tableShowing').innerText = 0; 
                 document.getElementById('tableTotal').innerText = 0;
                 return; 
@@ -916,6 +936,7 @@
             document.getElementById('loginModal').classList.add('hidden'); 
             document.getElementById('passwordInput').value = ''; 
             document.getElementById('passwordError').classList.add('hidden');
+            if (!isAuthenticated) executeSwitchView('volunteer');
         };
 
         const populateVolunteerPassport = (user) => {
