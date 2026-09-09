@@ -970,13 +970,19 @@
                 msgText.innerHTML = `ด้วยความห่วงใยในสุขภาพของท่าน แพทย์ประเมินว่าท่านเหมาะสมสำหรับ: <strong class="text-amber-900">ภารกิจสนับสนุนและส่งกำลังบำรุง (งดภารกิจแนวหน้า)</strong> เนื่องจากประเมินจากความดันโลหิตหรือประวัติสุขภาพ`;
                 recList.innerHTML = `<li class="flex gap-2"><i data-lucide="pill" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> กรุณารับประทานยาประจำตัวตามแพทย์สั่งอย่างเคร่งครัด</li><li class="flex gap-2"><i data-lucide="thermometer-sun" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หลีกเลี่ยงการทำงานกลางแดดจัดติดต่อกันเป็นเวลานาน เพื่อป้องกันโรคลมแดด</li><li class="flex gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หากมีอาการวิงเวียน หน้ามืด ให้แจ้งหัวหน้าชุดและพักทันที</li>`;
             } else {
+                // ดึงคำวินิจฉัยจากแพทย์มาแสดงผลเฉพาะคนที่ไม่พร้อมทำงาน
+                const verdictStr = user.post_verdict || user.pre_verdict || 'ไม่มีการระบุรายละเอียด';
+                
                 badgeEl.innerHTML = `<i data-lucide="heart-pulse" class="w-4 h-4 text-red-600"></i><span class="text-red-700">ส่งต่อแพทย์ (งดภารกิจ)</span>`;
                 badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-red-200";
-                msgBox.className = "bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm";
+                msgBox.className = "bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm flex flex-col gap-2";
                 msgText.innerHTML = `ผลการตรวจร่างกายของท่านอยู่ในเกณฑ์ <strong class="text-red-900">เฝ้าระวัง</strong> ขอให้ท่านงดการปฏิบัติภารกิจภาคสนามทุกประเภทในครั้งนี้ และเข้ารับการตรวจรักษาจากทีมแพทย์ศูนย์ฯ`;
+                
+                // เพิ่มกล่องแสดงคำวินิจฉัย
+                msgText.innerHTML += `<div class="mt-2 text-red-800 bg-red-100/50 px-3 py-2 rounded border border-red-200/50"><strong>คำวินิจฉัยแพทย์:</strong> ${verdictStr}</div>`;
+                
                 recList.innerHTML = `<li class="flex gap-2"><i data-lucide="stethoscope" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> โปรดติดต่อเต็นท์พยาบาลเพื่อตรวจเช็คสัญญาณชีพซ้ำและรับคำปรึกษา</li><li class="flex gap-2"><i data-lucide="bed" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> นอนหลับพักผ่อนให้เพียงพอ และงดเครื่องดื่มชูกำลัง/คาเฟอีน</li>`;
             }
-
             // ---- ส่วนสร้าง Dashboard ย้อนหลัง ----
             const histSection = document.getElementById('volunteerHistorySection');
             histSection.classList.remove('hidden');
@@ -1043,9 +1049,19 @@
             const content = document.getElementById('modalContent');
             
             let statusBanner = '';
-            if(user.status === 'Ready') statusBanner = '<div class="bg-green-50 text-green-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-green-200 text-sm font-medium"><i data-lucide="check-circle" class="w-5 h-5"></i> รับรองการปฏิบัติงาน: แนวหน้า/ทุกภารกิจ</div>';
-            else if(user.status === 'Conditional') statusBanner = '<div class="bg-amber-50 text-amber-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-amber-200 text-sm font-medium"><i data-lucide="alert-triangle" class="w-5 h-5"></i> รับรองการปฏิบัติงาน: สนับสนุน/ส่งกำลัง (มีเงื่อนไขสุขภาพ)</div>';
-            else statusBanner = '<div class="bg-red-50 text-red-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-red-200 text-sm font-medium"><i data-lucide="x-circle" class="w-5 h-5"></i> งดการปฏิบัติงาน: ต้องเข้ารับการประเมินโดยแพทย์เพิ่มเติม</div>';
+            if(user.status === 'Ready') {
+                statusBanner = '<div class="bg-green-50 text-green-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-green-200 text-sm font-medium"><i data-lucide="check-circle" class="w-5 h-5"></i> รับรองการปฏิบัติงาน: แนวหน้า/ทุกภารกิจ</div>';
+            } else if(user.status === 'Conditional') {
+                statusBanner = '<div class="bg-amber-50 text-amber-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-amber-200 text-sm font-medium"><i data-lucide="alert-triangle" class="w-5 h-5"></i> รับรองการปฏิบัติงาน: สนับสนุน/ส่งกำลัง (มีเงื่อนไขสุขภาพ)</div>';
+            } else {
+                // ดึงคำวินิจฉัยแพทย์มาแสดงใน Banner แจ้งเตือนสีแดง
+                const verdictStr = user.post_verdict || user.pre_verdict || 'ไม่มีการระบุรายละเอียด';
+                statusBanner = `
+                <div class="bg-red-50 text-red-800 p-3 rounded-md mb-4 flex flex-col gap-2 border border-red-200 text-sm font-medium">
+                    <div class="flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> งดการปฏิบัติงาน: ต้องเข้ารับการประเมินโดยแพทย์เพิ่มเติม</div>
+                    <div class="pl-7 text-xs text-red-700 font-normal"><strong>คำวินิจฉัยแพทย์:</strong> ${verdictStr}</div>
+                </div>`;
+            }
 
             const preSysStr = user.pre_sys !== null ? user.pre_sys : '-';
             const preDiaStr = user.pre_dia !== null ? user.pre_dia : '-';
