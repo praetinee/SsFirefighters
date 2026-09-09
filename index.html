@@ -183,18 +183,12 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div class="bg-white p-5 rounded-xl shadow-card border border-slate-100">
                 <h3 class="text-base font-semibold text-brand-900 mb-4 flex items-center gap-2">
                     <i data-lucide="pie-chart" class="w-5 h-5 text-brand-500"></i> สัดส่วนความพร้อมรายภารกิจ
                 </h3>
                 <div class="relative h-64 w-full flex justify-center"><canvas id="chartFitness"></canvas></div>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-card border border-slate-100">
-                <h3 class="text-base font-semibold text-brand-900 mb-4 flex items-center gap-2">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-500"></i> ความเครียดระบบหัวใจและหลอดเลือด (เฉพาะผู้ที่มีข้อมูล)
-                </h3>
-                <div class="relative h-64 w-full"><canvas id="chartVitals"></canvas></div>
             </div>
             <div class="bg-white p-5 rounded-xl shadow-card border border-slate-100">
                 <div class="flex justify-between items-center mb-4">
@@ -263,6 +257,17 @@
             <h2 class="text-2xl font-bold text-brand-900 mb-2">Personal Health Passport</h2>
             <p class="text-slate-500">สมุดพกสุขภาพอาสาสมัครดับไฟป่า</p>
         </div>
+        
+        <!-- กล่องค้นหาข้อมูลอาสาสมัคร -->
+        <div class="max-w-md mx-auto mb-6 fade-in relative">
+            <div class="relative flex items-center">
+                <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3"></i>
+                <input type="text" id="vpSearchInput" list="vpSearchList" class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-accent-500 focus:border-accent-500 shadow-sm transition-shadow" placeholder="ค้นหา ชื่อ-สกุล, เลขบัตร, หรือ HN..." onchange="handleVpSearch()">
+            </div>
+            <datalist id="vpSearchList"></datalist>
+            <p class="text-xs text-slate-400 mt-2 text-center">พิมพ์คำค้นหาแล้วกด Enter หรือคลิกเลือกจากรายการ</p>
+        </div>
+
         <div id="passportCard" class="bg-white rounded-2xl shadow-soft overflow-hidden border border-slate-100 fade-in">
             <div class="h-24 bg-gradient-to-r from-brand-900 to-brand-700 relative">
                 <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,#fff_1px,transparent_0)] [background-size:16px_16px]"></div>
@@ -656,27 +661,6 @@
                 options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } } }
             });
 
-            const ctxVitals = document.getElementById('chartVitals').getContext('2d');
-            let avgPreSys = 0, avgPrePulse = 0, avgPostSys = 0, avgPostPulse = 0;
-            let countPre = 0, countPost = 0;
-            data.forEach(d => {
-                if(d.pre_sys !== null) { avgPreSys += d.pre_sys; avgPrePulse += d.pre_pulse; countPre++; }
-                if(d.post_sys !== null) { avgPostSys += d.post_sys; avgPostPulse += d.post_pulse; countPost++; }
-            });
-            if(countPre > 0) { avgPreSys /= countPre; avgPrePulse /= countPre; }
-            if(countPost > 0) { avgPostSys /= countPost; avgPostPulse /= countPost; }
-            state.charts.vitals = new Chart(ctxVitals, {
-                type: 'bar',
-                data: {
-                    labels: ['ความดัน Systolic (mmHg)', 'ชีพจร (bpm)'],
-                    datasets: [
-                        { label: 'ก่อนปฏิบัติภารกิจ', data: [avgPreSys, avgPrePulse], backgroundColor: '#cbd5e1', borderRadius: 4 },
-                        { label: 'หลังปฏิบัติภารกิจ', data: [avgPostSys, avgPostPulse], backgroundColor: '#c2410c', borderRadius: 4 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { position: 'top' } } }
-            });
-
             const ctxDiag = document.getElementById('chartDiagnoses').getContext('2d');
             const diagCounts = {};
             data.forEach(d => {
@@ -881,11 +865,49 @@
             state.view = viewType;
             if(viewType === 'volunteer') {
                 document.body.classList.add('mode-volunteer');
+                
+                // ดึงรายชื่ออาสาสมัครมาสร้างรายการค้นหา (Autocomplete)
+                const datalist = document.getElementById('vpSearchList');
+                datalist.innerHTML = '';
+                const seenKeys = new Set();
+                appData.forEach(d => {
+                    const normKey = normalizeKey(d.rawName);
+                    if (!seenKeys.has(normKey)) {
+                        seenKeys.add(normKey);
+                        const opt = document.createElement('option');
+                        opt.value = `${d.name} | ${maskID(d.id)}`;
+                        datalist.appendChild(opt);
+                    }
+                });
+
+                document.getElementById('vpSearchInput').value = ''; // เคลียร์ช่องค้นหา
+                
                 const user = appData.find(d => d.status === 'Conditional') || appData[0];
                 if(user) populateVolunteerPassport(user);
             } else {
                 document.body.classList.remove('mode-volunteer');
                 updateDashboard(); 
+            }
+        };
+
+        const handleVpSearch = () => {
+            const inputVal = document.getElementById('vpSearchInput').value.toLowerCase().trim();
+            if (!inputVal) return;
+            
+            // แยกระหว่างชื่อกับเลขบัตรกรณีเลือกจาก Dropdown
+            const searchTerm = inputVal.split('|')[0].trim();
+
+            const user = appData.find(d => 
+                d.name.toLowerCase().includes(searchTerm) || 
+                d.id.includes(searchTerm) || 
+                d.rawName.toLowerCase().includes(searchTerm)
+            );
+
+            if (user) {
+                populateVolunteerPassport(user);
+                document.getElementById('vpSearchInput').blur(); // เอาเคอร์เซอร์ออก
+            } else {
+                alert('ไม่พบข้อมูลอาสาสมัคร กรุณาลองค้นหาด้วยชื่อ-สกุล หรือเลขบัตร/HN อื่น');
             }
         };
 
