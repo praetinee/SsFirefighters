@@ -90,7 +90,6 @@
                         <button id="phaseAll" class="px-3 py-1 rounded-sm bg-brand-500/20 text-white transition-colors" onclick="setPhase('all')">ภาพรวม</button>
                     </div>
                 </div>
-                <div class="text-sm text-brand-100 hidden lg:block" id="lastUpdatedText">อัปเดตข้อมูลล่าสุด: กำลังดึงข้อมูล...</div>
             </div>
         </div>
     </header>
@@ -223,6 +222,7 @@
         </div>
     </main>
 
+    <!-- Volunteer View -->
     <main class="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-8 w-full view-volunteer">
         <div class="text-center mb-8 fade-in">
             <h2 class="text-2xl font-bold text-brand-900 mb-2">Personal Health Passport</h2>
@@ -410,9 +410,7 @@
                 return new Promise((resolve) => {
                     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`;
                     Papa.parse(url, {
-                        download: true, 
-                        header: true, 
-                        skipEmptyLines: true,
+                        download: true, header: true, skipEmptyLines: true,
                         complete: (results) => resolve(results.data),
                         error: (error) => { console.error(`Error gid=${gid}:`, error); resolve([]); }
                     });
@@ -432,10 +430,13 @@
                 const mergeData = (data, year, phase) => {
                     if (!data || data.length === 0) return;
                     data.forEach(row => {
+                        
+                        // ฟังก์ชันช่วยจัดการหัวคอลัมน์ที่เว้นวรรคผิด
                         const getVal = (keys) => {
-                            for(let k of keys) {
-                                const exact = Object.keys(row).find(key => key.trim() === k);
-                                if(exact && row[exact] !== undefined && row[exact] !== null) {
+                            const rowKeys = Object.keys(row);
+                            for (let k of keys) {
+                                const exact = rowKeys.find(rk => rk.replace(/[\uFEFF\s]+/g, '').toLowerCase() === k.replace(/[\uFEFF\s]+/g, '').toLowerCase());
+                                if (exact && row[exact] !== undefined && row[exact] !== null) {
                                     const v = row[exact].toString().trim();
                                     if (v !== '' && v !== '-') return v;
                                 }
@@ -443,13 +444,13 @@
                             return null;
                         };
 
-                        const rawName = getVal(['ชื่อ-สกุล', 'ชื่อ', 'ชื่อ สกุล']);
+                        const rawName = getVal(['ชื่อ-สกุล', 'ชื่อ', 'ชื่อสกุล']);
                         if (!rawName) return;
                         
                         const name = cleanName(rawName);
                         if (!name) return;
                         
-                        const id = getVal(['เลขบัตรประชาชน', 'ID']) || 'ไม่มีระบุ';
+                        let id = getVal(['เลขบัตรประชาชน', 'ID', 'เลขบัตร']) || 'ไม่มีระบุ';
                         const hnVal = getVal(['HN']);
                         const key = `${year}_${normalizeKey(rawName)}`;
 
@@ -470,7 +471,7 @@
                         const ageVal = getVal(['อายุ']);
                         if (ageVal) user.age = parseInt(ageVal);
                         
-                        const bmiVal = getVal(['BMI']);
+                        const bmiVal = getVal(['BMI', 'ดัชนีมวลกาย']);
                         if (bmiVal) user.bmi = parseFloat(bmiVal);
                         
                         const condVal = getVal(['โรคประจำตัว']);
@@ -485,7 +486,7 @@
                         const sysVal = getVal(['ความดันตัวบน']);
                         const diaVal = getVal(['ความดันตัวล่าง']);
                         const pulseVal = getVal(['ชีพจร']);
-                        const verdictVal = getVal(['ผลการตรวจสุขภาพจากแพทย์']);
+                        const verdictVal = getVal(['ผลการตรวจสุขภาพจากแพทย์', 'ผลการตรวจ']);
 
                         if (phase === 'pre') {
                             if (sysVal !== null) user.pre_sys = parseInt(sysVal);
@@ -498,7 +499,7 @@
                             if (pulseVal !== null) user.post_pulse = parseInt(pulseVal);
                             if (verdictVal) user.post_verdict = verdictVal;
                             
-                            const diagStr = getVal(['ความผิดปกติจากการวินิจฉัย']);
+                            const diagStr = getVal(['ความผิดปกติจากการวินิจฉัย', 'อาการหลังภารกิจ', 'อาการ']);
                             if (diagStr && diagStr !== 'ปกติ' && diagStr !== 'ไม่มี') {
                                 const diags = diagStr.split(',').map(s => s.trim()).filter(s => s);
                                 user.post_diag = [...new Set([...user.post_diag, ...diags])];
@@ -912,6 +913,7 @@
             document.getElementById('loginModal').classList.add('hidden'); 
             document.getElementById('passwordInput').value = ''; 
             document.getElementById('passwordError').classList.add('hidden');
+            if (!isAuthenticated) executeSwitchView('volunteer');
         };
 
         const populateVolunteerPassport = (user) => {
