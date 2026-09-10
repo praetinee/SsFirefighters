@@ -657,10 +657,10 @@
             const labelEl = document.getElementById('kpiTotalLabel');
             if (labelEl) labelEl.innerText = `กำลังพลที่ตรวจ (${yearText} ${phaseText})`;
 
-            // อัปเดตตัวเลขหลักให้ตรงกับจำนวนคนที่ผ่านเกณฑ์
+            // อัปเดตตัวเลขหลักให้ตรงกับจำนวนคนที่เลือก
             document.getElementById('kpiTotal').innerText = total;
-            document.getElementById('kpiFrontline').innerText = approvedFrontline;
-            document.getElementById('kpiSupport').innerText = approvedSupport;
+            document.getElementById('kpiFrontline').innerText = chosenFrontline;
+            document.getElementById('kpiSupport').innerText = chosenSupport;
             document.getElementById('kpiAlert').innerText = referral;
 
             // คำนวณเปอร์เซ็นต์จาก "จำนวนคนที่เลือก" ไม่ใช่คนทั้งหมด
