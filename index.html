@@ -190,7 +190,7 @@
             <div class="bg-white p-5 rounded-xl shadow-card border border-slate-100">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-base font-semibold text-brand-900 flex items-center gap-2">
-                        <i data-lucide="stethoscope" class="w-5 h-5 text-brand-500"></i> <span id="chartDiagTitle">ความผิดปกติหลังจบภารกิจ (Top 5)</span>
+                        <i data-lucide="stethoscope" class="w-5 h-5 text-brand-500"></i> <span id="chartDiagTitle">ความผิดปกติหลังจบภารกิจ (ทั้งหมด)</span>
                     </h3>
                     <span id="chartDiagSubtitle" class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">ข้อมูลเฉพาะ Post-mission</span>
                 </div>
@@ -718,16 +718,33 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             const diagCounts = {};
             
             if (state.phase === 'pre') {
-                document.getElementById('chartDiagTitle').innerText = 'โรคประจำตัว (Top 5)';
+                document.getElementById('chartDiagTitle').innerText = 'โรคประจำตัว (ทั้งหมด)';
                 document.getElementById('chartDiagSubtitle').innerText = 'ตรวจก่อนปฏิบัติภารกิจ';
                 validDataForCharts.forEach(d => {
                     if (d.pre_cond && d.pre_cond !== 'ไม่มี' && d.pre_cond !== '-' && d.pre_cond !== 'ไม่ระบุ') {
-                        const conds = d.pre_cond.split(',').map(s => s.trim()).filter(s => s);
+                        let text = d.pre_cond;
+                        let conds = [];
+                        
+                        // กรองและจัดกลุ่มโรคที่พบบ่อย (ตรวจจับคีย์เวิร์ด)
+                        if (text.includes('ความดัน')) conds.push('ความดัน');
+                        if (text.includes('ไขมัน')) conds.push('ไขมัน');
+                        if (text.includes('เบาหวาน')) conds.push('เบาหวาน');
+                        if (text.includes('หอบ') || text.includes('หืด')) conds.push('หอบหืด');
+                        if (text.includes('ภูมิแพ้')) conds.push('ภูมิแพ้');
+                        if (text.includes('หัวใจ')) conds.push('โรคหัวใจ');
+                        if (text.includes('เก๊าท์')) conds.push('โรคเก๊าท์');
+                        if (text.includes('ไทรอยด์')) conds.push('ไทรอยด์');
+                        
+                        // ถ้าไม่ตรงกับโรคหลักด้านบนเลย ให้จับแยกด้วยลูกน้ำ (,)
+                        if (conds.length === 0) {
+                            conds = text.split(',').map(s => s.trim()).filter(s => s);
+                        }
+                        
                         conds.forEach(c => diagCounts[c] = (diagCounts[c] || 0) + 1);
                     }
                 });
             } else {
-                document.getElementById('chartDiagTitle').innerText = 'ความผิดปกติหลังจบภารกิจ (Top 5)';
+                document.getElementById('chartDiagTitle').innerText = 'ความผิดปกติหลังจบภารกิจ (ทั้งหมด)';
                 document.getElementById('chartDiagSubtitle').innerText = 'ตรวจหลังปฏิบัติภารกิจ';
                 validDataForCharts.forEach(d => {
                     if(d.post_diag && d.post_diag.length > 0) {
@@ -736,7 +753,8 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                 });
             }
 
-            const sortedDiags = Object.entries(diagCounts).sort((a,b) => b[1] - a[1]).slice(0,5);
+            // นำ .slice(0,5) ออก เพื่อให้แสดงครบทุกรายการ
+            const sortedDiags = Object.entries(diagCounts).sort((a,b) => b[1] - a[1]);
             state.charts.diagnoses = new Chart(ctxDiag, {
                 type: 'bar', indexAxis: 'y',
                 data: {
