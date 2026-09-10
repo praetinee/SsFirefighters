@@ -467,7 +467,7 @@
                         if (!mergedUsers[key]) {
                             mergedUsers[key] = {
                                 id: id, name: name, rawName: rawName, year: year, age: null, bmi: null,
-                                pre_cond: 'ไม่มี', smoking: 'ไม่ระบุ', raw_role: 'ไม่ได้ระบุ', chosen_role: 'None',
+                                pre_cond: 'ไม่มี', post_cond: 'ไม่มี', smoking: 'ไม่ระบุ', raw_role: 'ไม่ได้ระบุ', chosen_role: 'None', 
                                 pre_sys: null, pre_dia: null, pre_pulse: null,
                                 post_sys: null, post_dia: null, post_pulse: null,
                                 pre_verdict: null, post_verdict: null, post_diag: []
@@ -479,8 +479,11 @@
                         // อ่านข้อมูลตามหัวคอลัมน์จริง
                         if (row['อายุ']) user.age = parseInt(row['อายุ']);
                         if (row['BMI']) user.bmi = parseFloat(row['BMI']);
-                        if (row['โรคประจำตัว'] && row['โรคประจำตัว'].trim() !== '-') user.pre_cond = row['โรคประจำตัว'].trim();
-if (row['การสูบบุหรี่'] && row['การสูบบุหรี่'].trim() !== '') user.smoking = row['การสูบบุหรี่'].trim();
+                        if (row['โรคประจำตัว'] && row['โรคประจำตัว'].trim() !== '-') {
+                            if (phase === 'pre') user.pre_cond = row['โรคประจำตัว'].trim();
+                            else if (phase === 'post') user.post_cond = row['โรคประจำตัว'].trim();
+                        }
+                        if (row['การสูบบุหรี่'] && row['การสูบบุหรี่'].trim() !== '') user.smoking = row['การสูบบุหรี่'].trim();
 
                         const roleVal = row['เข้าร่วมภารกิจ'];
                         if (roleVal && roleVal.trim() !== '-' && roleVal.trim() !== '') {
@@ -557,8 +560,9 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                     user.recommended_role = user.status === 'Referral' ? 'Medical' : (user.status === 'Conditional' ? 'Support' : 'Frontline');
                     user.mismatch = (user.chosen_role === 'Frontline' && user.recommended_role !== 'Frontline');
                     if (!user.pre_cond || user.pre_cond === '-') user.pre_cond = 'ไม่มี';
+                    if (!user.post_cond || user.post_cond === '-') user.post_cond = 'ไม่มี';
                     
-                    // หากมีการตรวจหลังภารกิจ (มีความดันหรือคำวินิจฉัย) แต่ไม่ได้ระบุอาการ ให้แสดงว่า 'ปกติ' 
+                    // หากมีการตรวจหลังภารกิจ (มีความดันหรือคำวินิจฉัย) แต่ไม่ได้ระบุอาการ ให้แสดงว่า 'ปกติ'
                     // แต่ถ้าไม่ได้ตรวจเลย ให้คงสถานะว่างไว้
                     if (user.post_diag.length === 0 && (user.post_sys !== null || user.post_verdict !== null)) {
                         user.post_diag = ['ปกติ'];
@@ -667,8 +671,11 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             const supportPct = chosenSupport > 0 ? ((approvedSupport / chosenSupport) * 100).toFixed(1) : 0;
             document.getElementById('kpiSupportPct').innerHTML = `เลือกลงฝ่ายสนับสนุน: ${chosenSupport} นาย<br>แพทย์อนุมัติ: ${approvedSupport} นาย (${supportPct}%)`;
             
-            // นับจำนวนคนที่มีโรคประจำตัว
-            const condCount = validData.filter(d => d.pre_cond && d.pre_cond !== 'ไม่มี' && d.pre_cond !== '-' && d.pre_cond !== 'ไม่ระบุ').length;
+            // นับจำนวนคนที่มีโรคประจำตัว (แยกตามชีตก่อน/หลังภารกิจ)
+            const condCount = validData.filter(d => {
+                const c = state.phase === 'pre' ? d.pre_cond : d.post_cond;
+                return c && c !== 'ไม่มี' && c !== '-' && c !== 'ไม่ระบุ';
+            }).length;
             const condPct = total > 0 ? ((condCount / total) * 100).toFixed(1) : 0;
             document.getElementById('kpiAlertNote').innerHTML = `
                 <span class="flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3"></i> ${state.phase === 'post' ? 'พบความผิดปกติหลังภารกิจ' : 'งดภารกิจสนาม / ไม่ผ่านเกณฑ์'}</span>
@@ -716,30 +723,31 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
 
             const ctxDiag = document.getElementById('chartDiagnoses').getContext('2d');
             const diagCounts = {};
+
+            // ฟังก์ชันจัดกลุ่มคำศัพท์ทางการแพทย์ให้เป็นหมวดหมู่เดียวกัน
+            const groupKeywords = (text) => {
+                let conds = [];
+                if (text.includes('ความดัน') || text.includes('HT')) conds.push('ความดัน');
+                if (text.includes('ไขมัน') || text.includes('DLP')) conds.push('ไขมัน');
+                if (text.includes('เบาหวาน') || text.includes('DM')) conds.push('เบาหวาน');
+                if (text.includes('หอบ') || text.includes('หืด')) conds.push('หอบหืด');
+                if (text.includes('ภูมิแพ้') || text.includes('SLE')) conds.push('ภูมิแพ้');
+                if (text.includes('หัวใจ')) conds.push('โรคหัวใจ');
+                if (text.includes('เก๊าท์') || text.includes('Gout')) conds.push('โรคเก๊าท์');
+                if (text.includes('ไทรอยด์') || text.includes('Thyroid')) conds.push('ไทรอยด์');
+                
+                if (conds.length === 0) {
+                    conds = text.split(',').map(s => s.trim()).filter(s => s);
+                }
+                return conds;
+            };
             
             if (state.phase === 'pre') {
                 document.getElementById('chartDiagTitle').innerText = 'โรคประจำตัว (ทั้งหมด)';
                 document.getElementById('chartDiagSubtitle').innerText = 'ตรวจก่อนปฏิบัติภารกิจ';
                 validDataForCharts.forEach(d => {
                     if (d.pre_cond && d.pre_cond !== 'ไม่มี' && d.pre_cond !== '-' && d.pre_cond !== 'ไม่ระบุ') {
-                        let text = d.pre_cond;
-                        let conds = [];
-                        
-                        // กรองและจัดกลุ่มโรคที่พบบ่อย (ตรวจจับคีย์เวิร์ด)
-                        if (text.includes('ความดัน')) conds.push('ความดัน');
-                        if (text.includes('ไขมัน')) conds.push('ไขมัน');
-                        if (text.includes('เบาหวาน')) conds.push('เบาหวาน');
-                        if (text.includes('หอบ') || text.includes('หืด')) conds.push('หอบหืด');
-                        if (text.includes('ภูมิแพ้')) conds.push('ภูมิแพ้');
-                        if (text.includes('หัวใจ')) conds.push('โรคหัวใจ');
-                        if (text.includes('เก๊าท์')) conds.push('โรคเก๊าท์');
-                        if (text.includes('ไทรอยด์')) conds.push('ไทรอยด์');
-                        
-                        // ถ้าไม่ตรงกับโรคหลักด้านบนเลย ให้จับแยกด้วยลูกน้ำ (,)
-                        if (conds.length === 0) {
-                            conds = text.split(',').map(s => s.trim()).filter(s => s);
-                        }
-                        
+                        const conds = groupKeywords(d.pre_cond);
                         conds.forEach(c => diagCounts[c] = (diagCounts[c] || 0) + 1);
                     }
                 });
@@ -747,13 +755,18 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                 document.getElementById('chartDiagTitle').innerText = 'ความผิดปกติหลังจบภารกิจ (ทั้งหมด)';
                 document.getElementById('chartDiagSubtitle').innerText = 'ตรวจหลังปฏิบัติภารกิจ';
                 validDataForCharts.forEach(d => {
-                    if(d.post_diag && d.post_diag.length > 0) {
-                        d.post_diag.forEach(diag => { if (diag !== 'ปกติ') diagCounts[diag] = (diagCounts[diag] || 0) + 1; });
+                    // รวมเช็คทั้งอาการเจ็บป่วยหลังภารกิจ และโรคประจำตัวในชีตหลังภารกิจ
+                    let combinedTexts = [];
+                    if (d.post_cond && d.post_cond !== 'ไม่มี' && d.post_cond !== '-' && d.post_cond !== 'ไม่ระบุ') combinedTexts.push(d.post_cond);
+                    if (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ') combinedTexts.push(d.post_diag.join(','));
+                    
+                    if (combinedTexts.length > 0) {
+                        const conds = groupKeywords(combinedTexts.join(','));
+                        conds.forEach(c => diagCounts[c] = (diagCounts[c] || 0) + 1);
                     }
                 });
             }
 
-            // นำ .slice(0,5) ออก เพื่อให้แสดงครบทุกรายการ
             const sortedDiags = Object.entries(diagCounts).sort((a,b) => b[1] - a[1]);
             state.charts.diagnoses = new Chart(ctxDiag, {
                 type: 'bar', indexAxis: 'y',
@@ -877,8 +890,9 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                 tr.className = "hover:bg-slate-50 transition-colors cursor-pointer group";
                 tr.onclick = () => openModal(`${item.year}_${item.name}`);
                 
-                let condBadge = (item.pre_cond && item.pre_cond !== 'ไม่มี' && item.pre_cond !== '-' && item.pre_cond !== 'ไม่ระบุ') 
-                    ? `<div class="mt-1"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-600 border border-rose-100 truncate max-w-[150px]" title="โรคประจำตัว: ${item.pre_cond}"><i data-lucide="pill" class="w-2.5 h-2.5"></i> ${item.pre_cond}</span></div>` 
+                const currentCond = state.phase === 'pre' ? item.pre_cond : item.post_cond;
+                let condBadge = (currentCond && currentCond !== 'ไม่มี' && currentCond !== '-' && currentCond !== 'ไม่ระบุ') 
+                    ? `<div class="mt-1"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-600 border border-rose-100 truncate max-w-[150px]" title="โรคประจำตัว: ${currentCond}"><i data-lucide="pill" class="w-2.5 h-2.5"></i> ${currentCond}</span></div>` 
                     : '';
 
                 tr.innerHTML = `
@@ -1276,7 +1290,7 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                     <div>
                         <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">ความประสงค์</p>
                         <p class="text-sm font-medium text-slate-800">ภารกิจที่เลือกลง: ${user.chosen_role === 'Frontline' ? 'แนวหน้า' : (user.chosen_role === 'Support' ? 'สนับสนุน' : 'ตามภารกิจที่เลือก')}</p>
-                        <p class="text-sm font-medium text-brand-900">โรคประจำตัว: ${user.pre_cond}</p>
+                        <p class="text-sm font-medium text-brand-900">โรคประจำตัว: ${state.phase === 'pre' ? user.pre_cond : user.post_cond}</p>
                     </div>
                 </div>
 
