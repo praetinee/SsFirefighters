@@ -764,7 +764,7 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                     <td class="p-4">
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${item.chosen_role === 'Frontline' ? 'bg-orange-50 text-orange-700' : (item.chosen_role === 'Support' ? 'bg-slate-100 text-slate-700' : 'bg-slate-100 text-slate-400')}">
                             <i data-lucide="${item.chosen_role === 'Frontline' ? 'flame' : (item.chosen_role === 'Support' ? 'truck' : 'help-circle')}" class="w-3.5 h-3.5"></i>
-                            ${item.chosen_role === 'Frontline' ? 'แนวหน้า' : (item.chosen_role === 'Support' ? 'สนับสนุน' : 'ไม่ระบุ')}
+                            ${item.chosen_role === 'Frontline' ? 'แนวหน้า' : (item.chosen_role === 'Support' ? 'สนับสนุน' : 'ตามภารกิจที่เลือก')}
                         </span>
                     </td>
                     <td class="p-4">
@@ -926,12 +926,8 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                 badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-green-200";
                 msgBox.className = "bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm";
                 
-                // ตรวจสอบว่าอาสาสมัครได้ระบุภารกิจไว้หรือไม่
-                if (user.raw_role === 'ไม่ได้ระบุ' || !user.raw_role) {
-                    msgText.innerHTML = `ท่านได้รับการรับรองความพร้อมสำหรับภารกิจที่ท่านเลือก เพื่อความปลอดภัยสูงสุด ขอให้ท่านปฏิบัติตามกฎความปลอดภัยอย่างเคร่งครัด`;
-                } else {
-                    msgText.innerHTML = `ท่านได้รับการรับรองความพร้อมสำหรับ: <strong class="text-green-900">ทุกภารกิจ รวมถึงภารกิจแนวหน้าผจญเพลิง</strong> เพื่อความปลอดภัยสูงสุด ขอให้ท่านปฏิบัติตามกฎความปลอดภัยอย่างเคร่งครัด`;
-                }
+                let roleText = (user.raw_role === 'ไม่ได้ระบุ' || !user.raw_role) ? 'ตามภารกิจที่เลือก' : user.raw_role;
+                msgText.innerHTML = `ท่านได้รับการรับรองความพร้อมสำหรับ: <strong class="text-green-900">${roleText}</strong> เพื่อความปลอดภัยสูงสุด ขอให้ท่านปฏิบัติตามกฎความปลอดภัยอย่างเคร่งครัด`;
                 
                 recList.innerHTML = `<li class="flex gap-2"><i data-lucide="droplets" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> ดื่มน้ำให้เพียงพอ 3-4 ลิตรต่อวันระหว่างปฏิบัติงาน</li><li class="flex gap-2"><i data-lucide="wind" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> สวมหน้ากาก N95 ตลอดเวลาในพื้นที่ควันหนาแน่น</li>`;
             } else if (user.status === 'Conditional') {
@@ -1004,12 +1000,14 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                 const hasPre = d.pre_sys !== null || d.pre_verdict !== null;
                 const hasPost = d.post_sys !== null || d.post_verdict !== null || (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ');
                 
+                let historyRoleText = (d.raw_role === 'ไม่ได้ระบุ' || !d.raw_role) ? 'ตามภารกิจที่เลือก' : d.raw_role;
+                
                 if (hasPre) {
                     const trPre = document.createElement('tr');
                     trPre.innerHTML = `
                         <td class="p-2 text-slate-700">${d.year}</td>
                         <td class="p-2 text-slate-700">ก่อนภารกิจ</td>
-                        <td class="p-2 text-slate-700 font-medium">${d.raw_role || 'ไม่ได้ระบุ'}</td>
+                        <td class="p-2 text-slate-700 font-medium">${historyRoleText}</td>
                     `;
                     tbody.appendChild(trPre);
                 }
@@ -1019,7 +1017,7 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                     trPost.innerHTML = `
                         <td class="p-2 text-slate-700">${d.year}</td>
                         <td class="p-2 text-slate-700 text-brand-500">หลังภารกิจ</td>
-                        <td class="p-2 text-slate-700 font-medium">${d.raw_role || 'ไม่ได้ระบุ'}</td>
+                        <td class="p-2 text-slate-700 font-medium">${historyRoleText}</td>
                     `;
                     tbody.appendChild(trPost);
                 }
@@ -1029,7 +1027,7 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                     tr.innerHTML = `
                         <td class="p-2 text-slate-700">${d.year}</td>
                         <td class="p-2 text-slate-700 text-slate-400">ลงทะเบียน</td>
-                        <td class="p-2 text-slate-700 font-medium">${d.raw_role || 'ไม่ได้ระบุ'}</td>
+                        <td class="p-2 text-slate-700 font-medium">${historyRoleText}</td>
                     `;
                     tbody.appendChild(tr);
                 }
@@ -1085,7 +1083,7 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">ความประสงค์</p>
-                        <p class="text-sm font-medium text-slate-800">ภารกิจที่เลือกลง: ${user.chosen_role === 'Frontline' ? 'แนวหน้า' : (user.chosen_role === 'Support' ? 'สนับสนุน' : 'ไม่ระบุ')}</p>
+                        <p class="text-sm font-medium text-slate-800">ภารกิจที่เลือกลง: ${user.chosen_role === 'Frontline' ? 'แนวหน้า' : (user.chosen_role === 'Support' ? 'สนับสนุน' : 'ตามภารกิจที่เลือก')}</p>
                         <p class="text-sm font-medium text-brand-900">โรคประจำตัว: ${user.pre_cond}</p>
                     </div>
                 </div>
