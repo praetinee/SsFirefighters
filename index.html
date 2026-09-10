@@ -87,14 +87,10 @@
                 </div>
             </div>
             <div class="flex items-center gap-4">
-                <!-- ปุ่มกลับหน้า Workspace -->
-                <a href="https://praetinee.github.io/JanWorkspace/" class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-brand-800 text-brand-100 hover:text-white border border-brand-500/30 text-sm transition-colors" title="กลับหน้า Workspace">
-                    <i data-lucide="home" class="w-4 h-4"></i><span class="hidden lg:inline">Workspace</span>
-                </a>
-
                 <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-sm">
                     <i data-lucide="check-circle-2" class="w-4 h-4"></i> เชื่อมต่อ Google Sheets แล้ว
                 </div>
+                
                 <div class="bg-brand-800 p-1 rounded-lg flex items-center text-sm border border-brand-500/30">
                     <button id="btnCommanderView" class="px-3 py-1.5 rounded-md bg-white text-brand-900 font-medium transition-colors flex items-center gap-2" onclick="switchView('commander')">
                         <i data-lucide="shield-check" class="w-4 h-4"></i><span class="hidden md:inline">แพทย์/ผบ.</span>
@@ -102,6 +98,13 @@
                     <button id="btnVolunteerView" class="px-3 py-1.5 rounded-md text-brand-100 hover:text-white transition-colors flex items-center gap-2" onclick="switchView('volunteer')">
                         <i data-lucide="user" class="w-4 h-4"></i><span class="hidden md:inline">ข้อมูลอาสาฯรายบุคคล</span>
                     </button>
+                </div>
+
+                <!-- ปุ่มกลับหน้า Workspace (ขวาสุดพร้อมกรอบที่สูงเท่ากัน) -->
+                <div class="bg-brand-800 p-1 rounded-lg flex items-center text-sm border border-brand-500/30">
+                    <a href="https://praetinee.github.io/JanWorkspace/" class="px-3 py-1.5 rounded-md text-brand-100 hover:text-white hover:bg-brand-700/50 transition-colors flex items-center gap-2" title="กลับหน้า Workspace">
+                        <i data-lucide="home" class="w-4 h-4"></i><span class="hidden md:inline">Workspace</span>
+                    </a>
                 </div>
             </div>
         </div>
