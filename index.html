@@ -657,23 +657,36 @@
             const labelEl = document.getElementById('kpiTotalLabel');
             if (labelEl) labelEl.innerText = `กำลังพลที่ตรวจ (${yearText} ${phaseText})`;
 
-            // อัปเดตตัวเลขหลักให้ตรงกับจำนวนคนที่ผ่านเกณฑ์
+            // อัปเดตตัวเลขหลัก
             document.getElementById('kpiTotal').innerText = total;
             document.getElementById('kpiFrontline').innerText = approvedFrontline;
             document.getElementById('kpiSupport').innerText = approvedSupport;
             document.getElementById('kpiAlert').innerText = referral;
 
-            // ปรับชื่อหัวข้อตามแท็บ (ก่อน / หลังภารกิจ)
+            // จัดการข้อความรายละเอียดและชื่อหัวข้อตามแท็บ (ก่อน / หลังภารกิจ)
+            const frontPct = chosenFrontline > 0 ? ((approvedFrontline / chosenFrontline) * 100).toFixed(1) : 0;
+            const supportPct = chosenSupport > 0 ? ((approvedSupport / chosenSupport) * 100).toFixed(1) : 0;
+
             if (state.phase === 'post') {
                 document.getElementById('kpiLabelFrontline').innerText = 'ปฏิบัติหน้าที่เป็นแนวหน้า';
                 document.getElementById('kpiSubFrontline').style.display = 'none';
+                document.getElementById('kpiFrontlinePct').style.display = 'none'; // ซ่อนรายละเอียดเฉพาะหลังภารกิจ
+
                 document.getElementById('kpiLabelSupport').innerText = 'ปฏิบัติหน้าที่เป็นฝ่ายสนับสนุน';
                 document.getElementById('kpiSubSupport').style.display = 'none';
+                document.getElementById('kpiSupportPct').style.display = 'none'; // ซ่อนรายละเอียดเฉพาะหลังภารกิจ
             } else {
                 document.getElementById('kpiLabelFrontline').innerText = 'ความพร้อมแนวหน้า';
                 document.getElementById('kpiSubFrontline').style.display = 'block';
+                const fPctEl = document.getElementById('kpiFrontlinePct');
+                fPctEl.style.display = 'block';
+                fPctEl.innerHTML = `เลือกลงแนวหน้า: ${chosenFrontline} นาย<br>แพทย์อนุมัติ: ${approvedFrontline} นาย (${frontPct}%)`;
+
                 document.getElementById('kpiLabelSupport').innerText = 'กำลังพลฝ่ายสนับสนุน';
                 document.getElementById('kpiSubSupport').style.display = 'block';
+                const sPctEl = document.getElementById('kpiSupportPct');
+                sPctEl.style.display = 'block';
+                sPctEl.innerHTML = `เลือกลงฝ่ายสนับสนุน: ${chosenSupport} นาย<br>แพทย์อนุมัติ: ${approvedSupport} นาย (${supportPct}%)`;
             }
             
             // นับจำนวนคนที่มีโรคประจำตัว (แยกตามชีตก่อน/หลังภารกิจ)
