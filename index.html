@@ -621,9 +621,9 @@
 
             const total = validData.length;
             
-            // 1. นับจำนวนคนที่เลือกลงแต่ละภารกิจ
-            const chosenFrontline = validData.filter(d => d.chosen_role === 'Frontline').length;
-            const chosenSupport = validData.filter(d => d.chosen_role === 'Support').length;
+            // 1. นับจำนวนคนที่เลือกลงแต่ละภารกิจ (นับจาก raw_role โดยตรงเพราะ 1 คนสามารถเลือกได้หลายหน้าที่)
+            const chosenFrontline = validData.filter(d => d.raw_role && (d.raw_role.includes('เจ้าหน้าที่') || d.raw_role.includes('อาสาสมัคร'))).length;
+            const chosenSupport = validData.filter(d => d.raw_role && (d.raw_role.includes('แนวกันไฟ') || d.raw_role.includes('สนับสนุน') || d.raw_role.includes('ส่งกำลัง'))).length;
 
             // 2. ประเมินสถานะและนับจำนวนให้ตรงกับเงื่อนไขของช่วงเวลา (ก่อน/หลัง)
             let approvedFrontline = 0;
