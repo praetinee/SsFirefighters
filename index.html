@@ -616,8 +616,13 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             document.getElementById('kpiSupport').innerText = support;
             document.getElementById('kpiAlert').innerText = referral;
 
-            document.getElementById('kpiFrontlinePct').innerText = total > 0 ? `${((frontline/total)*100).toFixed(1)}% ของทั้งหมด` : '0%';
-            document.getElementById('kpiSupportPct').innerText = total > 0 ? `${((support/total)*100).toFixed(1)}% ของทั้งหมด` : '0%';
+            const chosenFrontline = validData.filter(d => d.chosen_role === 'Frontline').length;
+            const frontTotalPct = total > 0 ? ((frontline / total) * 100).toFixed(1) : 0;
+            document.getElementById('kpiFrontlinePct').innerHTML = `เลือกลงแนวหน้า: ${chosenFrontline} นาย<br>แพทย์อนุมัติ: ${frontline} นาย (${frontTotalPct}% ของทั้งหมด)`;
+
+            const chosenSupport = validData.filter(d => d.chosen_role === 'Support').length;
+            const supportTotalPct = total > 0 ? ((support / total) * 100).toFixed(1) : 0;
+            document.getElementById('kpiSupportPct').innerHTML = `เลือกลงสนับสนุน: ${chosenSupport} นาย<br>แพทย์อนุมัติ: ${support} นาย (${supportTotalPct}% ของทั้งหมด)`;
         };
         
         const initOrUpdateCharts = (data) => {
