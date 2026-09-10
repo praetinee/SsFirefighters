@@ -172,7 +172,9 @@
                         <h2 id="kpiAlert" class="text-3xl font-bold font-inter text-status-referral">0</h2>
                         <span class="text-sm text-slate-500">นาย</span>
                     </div>
-                    <p class="text-xs text-red-600 mt-2 flex items-center gap-1 font-medium"><i data-lucide="activity" class="w-3 h-3"></i> งดภารกิจสนาม</p>
+                    <div id="kpiAlertNote" class="text-xs text-red-600 mt-2 flex flex-col gap-1 font-medium">
+                        <span class="flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3"></i> งดภารกิจสนาม</span>
+                    </div>
                 </div>
                 <div class="bg-red-50 p-3 rounded-full border border-red-100"><i data-lucide="heart-pulse" class="w-6 h-6 text-status-referral"></i></div>
             </div>
@@ -188,9 +190,9 @@
             <div class="bg-white p-5 rounded-xl shadow-card border border-slate-100">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-base font-semibold text-brand-900 flex items-center gap-2">
-                        <i data-lucide="stethoscope" class="w-5 h-5 text-brand-500"></i> ความผิดปกติหลังจบภารกิจ (Top 5)
+                        <i data-lucide="stethoscope" class="w-5 h-5 text-brand-500"></i> <span id="chartDiagTitle">ความผิดปกติหลังจบภารกิจ (Top 5)</span>
                     </h3>
-                    <span class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">ข้อมูลเฉพาะ Post-mission</span>
+                    <span id="chartDiagSubtitle" class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">ข้อมูลเฉพาะ Post-mission</span>
                 </div>
                 <div class="relative h-64 w-full"><canvas id="chartDiagnoses"></canvas></div>
             </div>
@@ -664,6 +666,14 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
 
             const supportPct = chosenSupport > 0 ? ((approvedSupport / chosenSupport) * 100).toFixed(1) : 0;
             document.getElementById('kpiSupportPct').innerHTML = `เลือกลงฝ่ายสนับสนุน: ${chosenSupport} นาย<br>แพทย์อนุมัติ: ${approvedSupport} นาย (${supportPct}%)`;
+            
+            // นับจำนวนคนที่มีโรคประจำตัว
+            const condCount = validData.filter(d => d.pre_cond && d.pre_cond !== 'ไม่มี' && d.pre_cond !== '-' && d.pre_cond !== 'ไม่ระบุ').length;
+            const condPct = total > 0 ? ((condCount / total) * 100).toFixed(1) : 0;
+            document.getElementById('kpiAlertNote').innerHTML = `
+                <span class="flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3"></i> ${state.phase === 'post' ? 'พบความผิดปกติหลังภารกิจ' : 'งดภารกิจสนาม / ไม่ผ่านเกณฑ์'}</span>
+                <span class="flex items-center gap-1 mt-1 text-rose-600"><i data-lucide="pill" class="w-3 h-3"></i> พบโรคประจำตัวรวม ${condCount} นาย (${condPct}%)</span>
+            `;
         };
         
         const initOrUpdateCharts = (data) => {
@@ -706,11 +716,26 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
 
             const ctxDiag = document.getElementById('chartDiagnoses').getContext('2d');
             const diagCounts = {};
-            data.forEach(d => {
-                if(d.post_diag && d.post_diag.length > 0) {
-                    d.post_diag.forEach(diag => { if (diag !== 'ปกติ') diagCounts[diag] = (diagCounts[diag] || 0) + 1; });
-                }
-            });
+            
+            if (state.phase === 'pre') {
+                document.getElementById('chartDiagTitle').innerText = 'โรคประจำตัว (Top 5)';
+                document.getElementById('chartDiagSubtitle').innerText = 'ตรวจก่อนปฏิบัติภารกิจ';
+                validDataForCharts.forEach(d => {
+                    if (d.pre_cond && d.pre_cond !== 'ไม่มี' && d.pre_cond !== '-' && d.pre_cond !== 'ไม่ระบุ') {
+                        const conds = d.pre_cond.split(',').map(s => s.trim()).filter(s => s);
+                        conds.forEach(c => diagCounts[c] = (diagCounts[c] || 0) + 1);
+                    }
+                });
+            } else {
+                document.getElementById('chartDiagTitle').innerText = 'ความผิดปกติหลังจบภารกิจ (Top 5)';
+                document.getElementById('chartDiagSubtitle').innerText = 'ตรวจหลังปฏิบัติภารกิจ';
+                validDataForCharts.forEach(d => {
+                    if(d.post_diag && d.post_diag.length > 0) {
+                        d.post_diag.forEach(diag => { if (diag !== 'ปกติ') diagCounts[diag] = (diagCounts[diag] || 0) + 1; });
+                    }
+                });
+            }
+
             const sortedDiags = Object.entries(diagCounts).sort((a,b) => b[1] - a[1]).slice(0,5);
             state.charts.diagnoses = new Chart(ctxDiag, {
                 type: 'bar', indexAxis: 'y',
@@ -834,10 +859,15 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                 tr.className = "hover:bg-slate-50 transition-colors cursor-pointer group";
                 tr.onclick = () => openModal(`${item.year}_${item.name}`);
                 
+                let condBadge = (item.pre_cond && item.pre_cond !== 'ไม่มี' && item.pre_cond !== '-' && item.pre_cond !== 'ไม่ระบุ') 
+                    ? `<div class="mt-1"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-600 border border-rose-100 truncate max-w-[150px]" title="โรคประจำตัว: ${item.pre_cond}"><i data-lucide="pill" class="w-2.5 h-2.5"></i> ${item.pre_cond}</span></div>` 
+                    : '';
+
                 tr.innerHTML = `
                     <td class="p-4">
                         <div class="font-medium text-brand-900">${maskName(item.name)}</div>
                         <div class="text-xs text-slate-400 font-inter">${maskID(item.id)}</div>
+                        ${condBadge}
                     </td>
                     <td class="p-4 text-center">
                         <div>${ageStr} <span class="text-xs text-slate-400">ปี</span></div>
