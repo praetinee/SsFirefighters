@@ -665,10 +665,18 @@
 
             // คำนวณเปอร์เซ็นต์จาก "จำนวนคนที่เลือก" ไม่ใช่คนทั้งหมด
             const frontPct = chosenFrontline > 0 ? ((approvedFrontline / chosenFrontline) * 100).toFixed(1) : 0;
-            document.getElementById('kpiFrontlinePct').innerHTML = `เลือกลงแนวหน้า: ${chosenFrontline} นาย<br>แพทย์อนุมัติ: ${approvedFrontline} นาย (${frontPct}%)`;
+            if (state.phase === 'post') {
+                document.getElementById('kpiFrontlinePct').innerHTML = `ปฏิบัติหน้าที่แนวหน้า`;
+            } else {
+                document.getElementById('kpiFrontlinePct').innerHTML = `เลือกลงแนวหน้า: ${chosenFrontline} นาย<br>แพทย์อนุมัติ: ${approvedFrontline} นาย (${frontPct}%)`;
+            }
 
             const supportPct = chosenSupport > 0 ? ((approvedSupport / chosenSupport) * 100).toFixed(1) : 0;
-            document.getElementById('kpiSupportPct').innerHTML = `เลือกลงฝ่ายสนับสนุน: ${chosenSupport} นาย<br>แพทย์อนุมัติ: ${approvedSupport} นาย (${supportPct}%)`;
+            if (state.phase === 'post') {
+                document.getElementById('kpiSupportPct').innerHTML = `ปฏิบัติหน้าที่สนับสนุน`;
+            } else {
+                document.getElementById('kpiSupportPct').innerHTML = `เลือกลงฝ่ายสนับสนุน: ${chosenSupport} นาย<br>แพทย์อนุมัติ: ${approvedSupport} นาย (${supportPct}%)`;
+            }
             
             // นับจำนวนคนที่มีโรคประจำตัว (แยกตามชีตก่อน/หลังภารกิจ)
             const condCount = validData.filter(d => {
