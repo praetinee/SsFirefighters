@@ -612,14 +612,33 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             const chosenFrontline = validData.filter(d => d.chosen_role === 'Frontline').length;
             const chosenSupport = validData.filter(d => d.chosen_role === 'Support').length;
 
-            // 2. นับจำนวนคนที่ "แพทย์อนุมัติตามภารกิจที่เลือก"
-            // แนวหน้าต้องได้สถานะ Ready เท่านั้น
-            const approvedFrontline = validData.filter(d => d.chosen_role === 'Frontline' && d.status === 'Ready').length;
-            // ฝ่ายสนับสนุน สามารถเป็นได้ทั้ง Ready และ Conditional (เฝ้าระวังแต่ยังทำงานเบาได้)
-            const approvedSupport = validData.filter(d => d.chosen_role === 'Support' && (d.status === 'Ready' || d.status === 'Conditional')).length;
-            
-            // ส่งต่อแพทย์ (งดภารกิจทุกประเภท)
-            const referral = validData.filter(d => d.status === 'Referral').length;
+            // 2. ประเมินสถานะและนับจำนวนให้ตรงกับเงื่อนไขของช่วงเวลา (ก่อน/หลัง)
+            let approvedFrontline = 0;
+            let approvedSupport = 0;
+            let referral = 0;
+
+            validData.forEach(d => {
+                let currentStatus = 'Ready';
+                if (state.phase === 'post') {
+                    let actualVerdict = d.post_verdict || '';
+                    if (actualVerdict.includes('ผิดปกติ') || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('ส่งต่อ')) currentStatus = 'Referral';
+                    else if (d.post_sys >= 140 || d.post_dia >= 90) currentStatus = 'Conditional';
+                } else {
+                    let actualVerdict = d.pre_verdict || '';
+                    if (d.status === 'Referral' || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('งด') || actualVerdict.includes('ส่งต่อ') || actualVerdict.includes('ผิดปกติ')) currentStatus = 'Referral';
+                    else if (d.status === 'Conditional' || actualVerdict.includes('เฝ้าระวัง') || actualVerdict.includes('ระวัง') || actualVerdict.includes('ควร')) currentStatus = 'Conditional';
+                }
+
+                if (currentStatus === 'Referral') {
+                    referral++;
+                }
+                
+                if (d.chosen_role === 'Frontline' && currentStatus === 'Ready') {
+                    approvedFrontline++;
+                } else if (d.chosen_role === 'Support' && (currentStatus === 'Ready' || currentStatus === 'Conditional')) {
+                    approvedSupport++;
+                }
+            });
 
             const yearText = state.year === 'all' ? 'ทุกปี' : `ปี ${state.year}`;
             const labelEl = document.getElementById('kpiTotalLabel');
@@ -647,25 +666,27 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             const ctxFitness = document.getElementById('chartFitness').getContext('2d');
             const counts = { Ready: 0, Conditional: 0, Referral: 0 };
             
-            // ประมวลผลกราฟตาม phase ที่เลือก
+            // ประมวลผลกราฟตาม phase ที่เลือก และสร้าง properties _chartStatus เพื่อใช้ร่วมกัน
+            let validDataForCharts = [];
             if (state.phase === 'pre') {
-                const validPre = data.filter(d => d.pre_sys !== null || d.pre_verdict !== null);
-                validPre.forEach(d => {
-                    let actualVerdict = d.pre_verdict || 'รอประเมิน';
-                    if (d.status === 'Referral' || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('งด') || actualVerdict.includes('ส่งต่อ') || actualVerdict.includes('ผิดปกติ')) counts.Referral++;
-                    else if (d.status === 'Conditional' || actualVerdict.includes('เฝ้าระวัง') || actualVerdict.includes('ระวัง') || actualVerdict.includes('ควร')) counts.Conditional++;
-                    else counts.Ready++;
+                validDataForCharts = data.filter(d => d.pre_sys !== null || d.pre_verdict !== null);
+                validDataForCharts.forEach(d => {
+                    let actualVerdict = d.pre_verdict || '';
+                    if (d.status === 'Referral' || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('งด') || actualVerdict.includes('ส่งต่อ') || actualVerdict.includes('ผิดปกติ')) d._chartStatus = 'Referral';
+                    else if (d.status === 'Conditional' || actualVerdict.includes('เฝ้าระวัง') || actualVerdict.includes('ระวัง') || actualVerdict.includes('ควร')) d._chartStatus = 'Conditional';
+                    else d._chartStatus = 'Ready';
+                    counts[d._chartStatus]++;
                 });
             } else {
-                const validPost = data.filter(d => d.post_sys !== null || d.post_verdict !== null || (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ'));
-                validPost.forEach(d => {
-                    let actualVerdict = d.post_verdict || 'รอประเมิน';
-                    if (actualVerdict.includes('ผิดปกติ') || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('ส่งต่อ')) counts.Referral++;
-                    else if (d.post_sys >= 140 || d.post_dia >= 90) counts.Conditional++;
-                    else counts.Ready++;
+                validDataForCharts = data.filter(d => d.post_sys !== null || d.post_verdict !== null || (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ'));
+                validDataForCharts.forEach(d => {
+                    let actualVerdict = d.post_verdict || '';
+                    if (actualVerdict.includes('ผิดปกติ') || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('ส่งต่อ')) d._chartStatus = 'Referral';
+                    else if (d.post_sys >= 140 || d.post_dia >= 90) d._chartStatus = 'Conditional';
+                    else d._chartStatus = 'Ready';
+                    counts[d._chartStatus]++;
                 });
             }
-
             state.charts.fitness = new Chart(ctxFitness, {
                 type: 'doughnut',
                 data: {
@@ -693,10 +714,10 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             });
 
             const ctxScatter = document.getElementById('chartScatter').getContext('2d');
-            const validScatter = data.filter(d => d.age !== null && d.bmi !== null);
-            const scatterDataReady = validScatter.filter(d=>d.status==='Ready').map(d => ({x: d.age, y: d.bmi, _d: d}));
-            const scatterDataCond = validScatter.filter(d=>d.status==='Conditional').map(d => ({x: d.age, y: d.bmi, _d: d}));
-            const scatterDataRef = validScatter.filter(d=>d.status==='Referral').map(d => ({x: d.age, y: d.bmi, _d: d}));
+            const validScatter = validDataForCharts.filter(d => d.age !== null && d.bmi !== null);
+            const scatterDataReady = validScatter.filter(d=>d._chartStatus==='Ready').map(d => ({x: d.age, y: d.bmi, _d: d}));
+            const scatterDataCond = validScatter.filter(d=>d._chartStatus==='Conditional').map(d => ({x: d.age, y: d.bmi, _d: d}));
+            const scatterDataRef = validScatter.filter(d=>d._chartStatus==='Referral').map(d => ({x: d.age, y: d.bmi, _d: d}));
             state.charts.scatter = new Chart(ctxScatter, {
                 type: 'scatter',
                 data: {
