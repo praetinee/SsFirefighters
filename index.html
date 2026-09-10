@@ -703,23 +703,43 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
 
             filteredData.slice(0, 50).forEach((item) => {
                 
-                // แสดงผลจากคำวินิจฉัยของแพทย์โดยตรง (Col V และ W)
                 let badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
                 let badgeIcon = 'check-circle';
-                
-                let actualVerdict = item.post_verdict || item.pre_verdict || 'รอประเมิน';
-                let actualDiag = (item.post_diag && item.post_diag.length > 0 && item.post_diag[0] !== 'ปกติ') ? ` (${item.post_diag.join(', ')})` : '';
-                let badgeText = `${actualVerdict}${actualDiag}`;
+                let badgeText = '';
 
-                if (item.status === 'Referral' || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('งด') || actualVerdict.includes('ส่งต่อ')) {
-                    badgeClass = 'bg-red-50 text-red-700 border-red-200';
-                    badgeIcon = 'x-circle';
-                } else if (item.status === 'Conditional' || actualVerdict.includes('เฝ้าระวัง') || actualVerdict.includes('ระวัง') || actualVerdict.includes('ควร')) {
-                    badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
-                    badgeIcon = 'alert-circle';
+                // แยกการแสดงผลตามช่วงเวลา (ก่อนภารกิจ / หลังภารกิจ)
+                if (state.phase === 'post' || (state.phase === 'all' && item.post_verdict)) {
+                    let actualVerdict = item.post_verdict || 'รอประเมิน';
+                    let actualDiag = (item.post_diag && item.post_diag.length > 0 && item.post_diag[0] !== 'ปกติ') ? ` (${item.post_diag.join(', ')})` : '';
+                    
+                    if (actualVerdict.includes('ผิดปกติ') || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('ส่งต่อ')) {
+                        badgeClass = 'bg-red-50 text-red-700 border-red-200';
+                        badgeIcon = 'activity';
+                        badgeText = `หลังภารกิจ: พบความผิดปกติ${actualDiag}`;
+                    } else if (item.post_sys >= 140 || item.post_dia >= 90) {
+                        badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                        badgeIcon = 'alert-circle';
+                        badgeText = `หลังภารกิจ: ${actualVerdict} (ระบบแนะนำ: ระวังความดัน)`;
+                    } else {
+                        badgeClass = 'bg-green-50 text-green-700 border-green-200';
+                        badgeIcon = 'check-circle';
+                        badgeText = `หลังภารกิจ: ${actualVerdict}${actualDiag}`;
+                    }
                 } else {
-                    badgeClass = 'bg-green-50 text-green-700 border-green-200';
-                    badgeIcon = 'check-circle';
+                    let actualVerdict = item.pre_verdict || 'รอประเมิน';
+                    if (item.status === 'Referral' || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('งด') || actualVerdict.includes('ส่งต่อ') || actualVerdict.includes('ผิดปกติ')) {
+                        badgeClass = 'bg-red-50 text-red-700 border-red-200';
+                        badgeIcon = 'x-circle';
+                        badgeText = `ก่อนภารกิจ: ไม่อนุมัติ (${actualVerdict})`;
+                    } else if (item.status === 'Conditional' || actualVerdict.includes('เฝ้าระวัง') || actualVerdict.includes('ระวัง') || actualVerdict.includes('ควร')) {
+                        badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                        badgeIcon = 'alert-circle';
+                        badgeText = `ก่อนภารกิจ: เฝ้าระวัง (ประเมินโดยแพทย์/ระบบ)`;
+                    } else {
+                        badgeClass = 'bg-green-50 text-green-700 border-green-200';
+                        badgeIcon = 'check-circle';
+                        badgeText = `ก่อนภารกิจ: อนุมัติ (${actualVerdict})`;
+                    }
                 }
 
                 let sys = item.pre_sys, dia = item.pre_dia, pulse = item.pre_pulse;
@@ -921,34 +941,68 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             
             recList.innerHTML = ''; 
 
-            if(user.status === 'Ready') {
-                badgeEl.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i><span class="text-green-700">พร้อมปฏิบัติหน้าที่</span>`;
-                badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-green-200";
-                msgBox.className = "bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm";
+            const isPostMission = user.post_verdict !== null || user.post_sys !== null;
+            
+            // อัปเดตข้อความ Footer ด้านล่างสุดของบัตร
+            const footerEl = document.querySelector('#passportCard .bg-slate-50.p-4');
+            if(footerEl) {
+                footerEl.innerText = isPostMission 
+                    ? "ข้อมูลอัปเดตล่าสุดจากการตรวจหลังปฏิบัติภารกิจ (Post-mission)" 
+                    : "ข้อมูลอัปเดตล่าสุดจากการตรวจก่อนปฏิบัติภารกิจ (Pre-mission)";
+            }
+
+            if (isPostMission) {
+                // สำหรับช่วงหลังภารกิจ
+                let verdictStr = user.post_verdict || 'ไม่ระบุ';
+                let isSystemAlert = (user.post_sys >= 140 || user.post_dia >= 90);
+                let hasMedicalAlert = verdictStr.includes('ผิดปกติ');
+                let diagStr = (user.post_diag && user.post_diag.length > 0 && user.post_diag[0] !== 'ปกติ') ? user.post_diag.join(', ') : '';
                 
-                let roleText = (user.raw_role === 'ไม่ได้ระบุ' || !user.raw_role) ? 'ตามภารกิจที่เลือก' : user.raw_role;
-                msgText.innerHTML = `ท่านได้รับการรับรองความพร้อมสำหรับ: <strong class="text-green-900">${roleText}</strong> เพื่อความปลอดภัยสูงสุด ขอให้ท่านปฏิบัติตามกฎความปลอดภัยอย่างเคร่งครัด`;
-                
-                recList.innerHTML = `<li class="flex gap-2"><i data-lucide="droplets" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> ดื่มน้ำให้เพียงพอ 3-4 ลิตรต่อวันระหว่างปฏิบัติงาน</li><li class="flex gap-2"><i data-lucide="wind" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> สวมหน้ากาก N95 ตลอดเวลาในพื้นที่ควันหนาแน่น</li>`;
-            } else if (user.status === 'Conditional') {
-                badgeEl.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i><span class="text-amber-700">เหมาะสมกับงานสนับสนุน</span>`;
-                badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-amber-200";
-                msgBox.className = "bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm";
-                msgText.innerHTML = `ด้วยความห่วงใยในสุขภาพของท่าน แพทย์ประเมินว่าท่านเหมาะสมสำหรับ: <strong class="text-amber-900">ภารกิจสนับสนุนและส่งกำลังบำรุง (งดภารกิจแนวหน้า)</strong> เนื่องจากประเมินจากความดันโลหิตหรือประวัติสุขภาพ`;
-                recList.innerHTML = `<li class="flex gap-2"><i data-lucide="pill" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> กรุณารับประทานยาประจำตัวตามแพทย์สั่งอย่างเคร่งครัด</li><li class="flex gap-2"><i data-lucide="thermometer-sun" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หลีกเลี่ยงการทำงานกลางแดดจัดติดต่อกันเป็นเวลานาน เพื่อป้องกันโรคลมแดด</li><li class="flex gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หากมีอาการวิงเวียน หน้ามืด ให้แจ้งหัวหน้าชุดและพักทันที</li>`;
+                if (hasMedicalAlert) {
+                    badgeEl.innerHTML = `<i data-lucide="activity" class="w-4 h-4 text-red-600"></i><span class="text-red-700">พบความผิดปกติหลังภารกิจ</span>`;
+                    badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-red-200";
+                    msgBox.className = "bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm flex flex-col gap-2";
+                    msgText.innerHTML = `แพทย์วินิจฉัยพบความผิดปกติหลังจบภารกิจ ขอให้ท่านติดตามอาการและปฏิบัติตามคำแนะนำของแพทย์อย่างเคร่งครัด`;
+                    msgText.innerHTML += `<div class="mt-2 text-red-800 bg-red-100/50 px-3 py-2 rounded border border-red-200/50"><strong>คำวินิจฉัยแพทย์:</strong> ${verdictStr} ${diagStr ? `(${diagStr})` : ''}</div>`;
+                    recList.innerHTML = `<li class="flex gap-2"><i data-lucide="stethoscope" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> โปรดติดตามอาการตามที่แพทย์สั่ง</li><li class="flex gap-2"><i data-lucide="bed" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> หากมีอาการแย่ลงให้รีบพบแพทย์ทันที</li>`;
+                } else if (isSystemAlert) {
+                    badgeEl.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 text-amber-600"></i><span class="text-amber-700">เฝ้าระวังความดันโลหิต</span>`;
+                    badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-amber-200";
+                    msgBox.className = "bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm";
+                    msgText.innerHTML = `แพทย์ประเมินว่า <strong>${verdictStr}</strong> แต่ระบบตรวจพบว่า <strong class="text-amber-900">ความดันโลหิตของท่านสูงกว่าเกณฑ์</strong> (คำแนะนำจากระบบ: ควรเฝ้าระวังและพักผ่อนให้เพียงพอ)`;
+                    recList.innerHTML = `<li class="flex gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> วัดความดันโลหิตซ้ำหลังจากพักผ่อนอย่างเต็มที่</li><li class="flex gap-2"><i data-lucide="droplets" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> ดื่มน้ำให้เพียงพอและงดเครื่องดื่มชูกำลัง/แอลกอฮอล์</li>`;
+                } else {
+                    badgeEl.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i><span class="text-green-700">สุขภาพปกติฟื้นฟูได้ดี</span>`;
+                    badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-green-200";
+                    msgBox.className = "bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm";
+                    msgText.innerHTML = `แพทย์ประเมินว่า <strong>${verdictStr}</strong> สุขภาพของท่านหลังจบภารกิจอยู่ในเกณฑ์ปกติ ขอบคุณสำหรับความเสียสละของท่าน`;
+                    recList.innerHTML = `<li class="flex gap-2"><i data-lucide="bed" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> พักผ่อนให้เพียงพอเพื่อฟื้นฟูร่างกาย</li><li class="flex gap-2"><i data-lucide="utensils" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> รับประทานอาหารที่มีประโยชน์และดื่มน้ำสะอาด</li>`;
+                }
             } else {
-                // ดึงคำวินิจฉัยจากแพทย์มาแสดงผลเฉพาะคนที่ไม่พร้อมทำงาน
-                const verdictStr = user.post_verdict || user.pre_verdict || 'ไม่มีการระบุรายละเอียด';
+                // สำหรับช่วงก่อนภารกิจ
+                let roleText = (user.raw_role === 'ไม่ได้ระบุ' || !user.raw_role) ? 'ตามภารกิจที่เลือก' : user.raw_role;
+                let verdictStr = user.pre_verdict || 'ไม่มีการระบุรายละเอียด';
                 
-                badgeEl.innerHTML = `<i data-lucide="heart-pulse" class="w-4 h-4 text-red-600"></i><span class="text-red-700">ส่งต่อแพทย์ (งดภารกิจ)</span>`;
-                badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-red-200";
-                msgBox.className = "bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm flex flex-col gap-2";
-                msgText.innerHTML = `ผลการตรวจร่างกายของท่านอยู่ในเกณฑ์ <strong class="text-red-900">เฝ้าระวัง</strong> ขอให้ท่านงดการปฏิบัติภารกิจภาคสนามทุกประเภทในครั้งนี้ และเข้ารับการตรวจรักษาจากทีมแพทย์ศูนย์ฯ`;
-                
-                // เพิ่มกล่องแสดงคำวินิจฉัย
-                msgText.innerHTML += `<div class="mt-2 text-red-800 bg-red-100/50 px-3 py-2 rounded border border-red-200/50"><strong>คำวินิจฉัยแพทย์:</strong> ${verdictStr}</div>`;
-                
-                recList.innerHTML = `<li class="flex gap-2"><i data-lucide="stethoscope" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> โปรดติดต่อเต็นท์พยาบาลเพื่อตรวจเช็คสัญญาณชีพซ้ำและรับคำปรึกษา</li><li class="flex gap-2"><i data-lucide="bed" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> นอนหลับพักผ่อนให้เพียงพอ และงดเครื่องดื่มชูกำลัง/คาเฟอีน</li>`;
+                if (user.status === 'Ready') {
+                    badgeEl.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i><span class="text-green-700">พร้อมปฏิบัติหน้าที่</span>`;
+                    badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-green-200";
+                    msgBox.className = "bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm";
+                    msgText.innerHTML = `แพทย์ประเมินว่า <strong>${verdictStr}</strong> ท่านได้รับการอนุมัติให้ปฏิบัติงาน: <strong class="text-green-900">${roleText}</strong> ขอให้ปฏิบัติตามกฎความปลอดภัยอย่างเคร่งครัด`;
+                    recList.innerHTML = `<li class="flex gap-2"><i data-lucide="droplets" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> ดื่มน้ำให้เพียงพอ 3-4 ลิตรต่อวันระหว่างปฏิบัติงาน</li><li class="flex gap-2"><i data-lucide="wind" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i> สวมหน้ากาก N95 ตลอดเวลาในพื้นที่ควันหนาแน่น</li>`;
+                } else if (user.status === 'Conditional') {
+                    badgeEl.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i><span class="text-amber-700">ควรเฝ้าระวัง / มีเงื่อนไข</span>`;
+                    badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-amber-200";
+                    msgBox.className = "bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm flex flex-col gap-2";
+                    msgText.innerHTML = `แพทย์ประเมินว่า <strong>${verdictStr}</strong> (ระบบตรวจสอบพบความเสี่ยงเพิ่มเติมจากความดันโลหิต/ประวัติสุขภาพ) แนะนำให้หลีกเลี่ยงภารกิจที่ใช้แรงกายหนัก`;
+                    recList.innerHTML = `<li class="flex gap-2"><i data-lucide="pill" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> รับประทานยาประจำตัวตามแพทย์สั่งอย่างเคร่งครัด</li><li class="flex gap-2"><i data-lucide="thermometer-sun" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i> หลีกเลี่ยงการทำงานกลางแดดจัดติดต่อกันเป็นเวลานาน</li>`;
+                } else {
+                    badgeEl.innerHTML = `<i data-lucide="heart-pulse" class="w-4 h-4 text-red-600"></i><span class="text-red-700">ไม่อนุมัติ (งดภารกิจ)</span>`;
+                    badgeEl.className = "px-3 py-1 rounded-full text-sm font-medium border bg-white flex items-center gap-1 shadow-sm border-red-200";
+                    msgBox.className = "bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm flex flex-col gap-2";
+                    msgText.innerHTML = `ผลการตรวจร่างกายไม่ผ่านเกณฑ์ ขอให้ท่านงดการปฏิบัติภารกิจภาคสนามทุกประเภทในครั้งนี้`;
+                    msgText.innerHTML += `<div class="mt-2 text-red-800 bg-red-100/50 px-3 py-2 rounded border border-red-200/50"><strong>คำวินิจฉัยแพทย์:</strong> ${verdictStr}</div>`;
+                    recList.innerHTML = `<li class="flex gap-2"><i data-lucide="stethoscope" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> โปรดติดต่อเต็นท์พยาบาลเพื่อตรวจเช็คซ้ำและรับคำปรึกษา</li><li class="flex gap-2"><i data-lucide="bed" class="w-4 h-4 text-red-500 shrink-0 mt-0.5"></i> นอนหลับพักผ่อนให้เพียงพอ และงดเครื่องดื่มชูกำลัง</li>`;
+                }
             }
             // ---- ส่วนสร้าง Dashboard ย้อนหลัง ----
             const histSection = document.getElementById('volunteerHistorySection');
@@ -1044,20 +1098,40 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             const content = document.getElementById('modalContent');
             
             let statusBanner = '';
-            if(user.status === 'Ready') {
-                statusBanner = '<div class="bg-green-50 text-green-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-green-200 text-sm font-medium"><i data-lucide="check-circle" class="w-5 h-5"></i> รับรองการปฏิบัติงาน: ตามภารกิจที่เลือก</div>';
-            } else if(user.status === 'Conditional') {
-                statusBanner = '<div class="bg-amber-50 text-amber-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-amber-200 text-sm font-medium"><i data-lucide="alert-triangle" class="w-5 h-5"></i> รับรองการปฏิบัติงาน: สนับสนุน/ส่งกำลัง (มีเงื่อนไขสุขภาพ)</div>';
+            let isModalPost = state.phase === 'post' || (state.phase === 'all' && user.post_verdict !== null);
+            
+            if (isModalPost) {
+                let vStr = user.post_verdict || 'ไม่ระบุ';
+                if (vStr.includes('ผิดปกติ')) {
+                    statusBanner = `<div class="bg-red-50 text-red-800 p-3 rounded-md mb-4 flex flex-col gap-2 border border-red-200 text-sm font-medium">
+                        <div class="flex items-center gap-2"><i data-lucide="activity" class="w-5 h-5"></i> ตรวจหลังภารกิจ: พบความผิดปกติ (อิงตามแพทย์)</div>
+                        <div class="pl-7 text-xs text-red-700 font-normal"><strong>คำวินิจฉัยแพทย์:</strong> ${vStr} ${user.post_diag.join(', ')}</div>
+                    </div>`;
+                } else if (user.post_sys >= 140 || user.post_dia >= 90) {
+                    statusBanner = `<div class="bg-amber-50 text-amber-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-amber-200 text-sm font-medium"><i data-lucide="alert-triangle" class="w-5 h-5"></i> ตรวจหลังภารกิจ: ${vStr} <span class="text-xs text-amber-600 font-normal">(ระบบแนะนำเฝ้าระวังความดันโลหิต)</span></div>`;
+                } else {
+                    statusBanner = `<div class="bg-green-50 text-green-800 p-3 rounded-md mb-4 flex items-center gap-2 border border-green-200 text-sm font-medium"><i data-lucide="check-circle" class="w-5 h-5"></i> ตรวจหลังภารกิจ: ${vStr}</div>`;
+                }
             } else {
-                // ดึงคำวินิจฉัยแพทย์มาแสดงใน Banner แจ้งเตือนสีแดง
-                const verdictStr = user.post_verdict || user.pre_verdict || 'ไม่มีการระบุรายละเอียด';
-                statusBanner = `
-                <div class="bg-red-50 text-red-800 p-3 rounded-md mb-4 flex flex-col gap-2 border border-red-200 text-sm font-medium">
-                    <div class="flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> งดการปฏิบัติงาน: ต้องเข้ารับการประเมินโดยแพทย์เพิ่มเติม</div>
-                    <div class="pl-7 text-xs text-red-700 font-normal"><strong>คำวินิจฉัยแพทย์:</strong> ${verdictStr}</div>
-                </div>`;
+                let vStr = user.pre_verdict || 'ไม่ระบุ';
+                if(user.status === 'Ready') {
+                    statusBanner = `<div class="bg-green-50 text-green-800 p-3 rounded-md mb-4 flex flex-col gap-1 border border-green-200 text-sm font-medium">
+                        <div class="flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5"></i> ตรวจก่อนภารกิจ: อนุมัติตามภารกิจที่เลือก</div>
+                        <div class="pl-7 text-xs text-green-700 font-normal"><strong>แพทย์ประเมิน:</strong> ${vStr}</div>
+                    </div>`;
+                } else if(user.status === 'Conditional') {
+                    statusBanner = `<div class="bg-amber-50 text-amber-800 p-3 rounded-md mb-4 flex flex-col gap-1 border border-amber-200 text-sm font-medium">
+                        <div class="flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i> ตรวจก่อนภารกิจ: ควรเฝ้าระวัง / มีเงื่อนไขสุขภาพ</div>
+                        <div class="pl-7 text-xs text-amber-700 font-normal"><strong>แพทย์ประเมิน:</strong> ${vStr}</div>
+                    </div>`;
+                } else {
+                    statusBanner = `
+                    <div class="bg-red-50 text-red-800 p-3 rounded-md mb-4 flex flex-col gap-2 border border-red-200 text-sm font-medium">
+                        <div class="flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> ตรวจก่อนภารกิจ: ไม่อนุมัติการปฏิบัติงาน</div>
+                        <div class="pl-7 text-xs text-red-700 font-normal"><strong>คำวินิจฉัยแพทย์:</strong> ${vStr}</div>
+                    </div>`;
+                }
             }
-
             const preSysStr = user.pre_sys !== null ? user.pre_sys : '-';
             const preDiaStr = user.pre_dia !== null ? user.pre_dia : '-';
             const prePulseStr = user.pre_pulse !== null ? user.pre_pulse : '-';
