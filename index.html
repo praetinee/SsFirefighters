@@ -467,6 +467,7 @@
                             mergedUsers[key] = {
                                 id: id, name: name, rawName: rawName, year: year, age: null, bmi: null,
                                 pre_cond: 'ไม่มี', post_cond: 'ไม่มี', smoking: 'ไม่ระบุ', raw_role: 'ไม่ได้ระบุ', chosen_role: 'None', 
+                                pre_raw_role: null, post_raw_role: null, // แยกเก็บข้อมูลให้ตรงกับชีต
                                 pre_sys: null, pre_dia: null, pre_pulse: null,
                                 post_sys: null, post_dia: null, post_pulse: null,
                                 pre_verdict: null, post_verdict: null, post_diag: []
@@ -488,6 +489,9 @@
                         if (roleVal && roleVal.trim() !== '-' && roleVal.trim() !== '') {
                             const rStr = roleVal.toString().trim();
                             user.raw_role = rStr;
+                            if (phase === 'pre') user.pre_raw_role = rStr;
+                            if (phase === 'post') user.post_raw_role = rStr;
+                            
                             // จำแนกตามตัวเลือกที่ระบุอย่างชัดเจน
                             if (rStr.includes('เจ้าหน้าที่') || rStr.includes('อาสาสมัคร')) {
                                 user.chosen_role = 'Frontline';
@@ -621,11 +625,18 @@
 
             const total = validData.length;
             
-            // 1. นับจำนวนคนที่เลือกลงแต่ละภารกิจ (นับจาก raw_role โดยตรงเพราะ 1 คนสามารถเลือกได้หลายหน้าที่)
-            const chosenFrontline = validData.filter(d => d.raw_role && (d.raw_role.includes('เจ้าหน้าที่') || d.raw_role.includes('อาสาสมัคร'))).length;
-            const chosenSupport = validData.filter(d => d.raw_role && (d.raw_role.includes('แนวกันไฟ') || d.raw_role.includes('สนับสนุน') || d.raw_role.includes('ส่งกำลัง'))).length;
+            // 1. นับจำนวนตามหน้าที่ที่เลือกจริงใน "ชีตของช่วงเวลานั้นๆ" (แยก Pre/Post และ 1 คนลงได้หลายหน้าที่)
+            const chosenFrontline = validData.filter(d => {
+                const r = state.phase === 'pre' ? d.pre_raw_role : d.post_raw_role;
+                return r && (r.includes('เจ้าหน้าที่') || r.includes('อาสาสมัคร'));
+            }).length;
+            
+            const chosenSupport = validData.filter(d => {
+                const r = state.phase === 'pre' ? d.pre_raw_role : d.post_raw_role;
+                return r && (r.includes('แนวกันไฟ') || r.includes('สนับสนุน') || r.includes('ส่งกำลัง'));
+            }).length;
 
-            // 2. ประเมินสถานะและนับจำนวนให้ตรงกับเงื่อนไขของช่วงเวลา (ก่อน/หลัง)
+            // 2. ประเมินสถานะและนับจำนวนการอนุมัติ (อิงตามหน้าที่ที่เลือกลงในชีตนั้นๆ)
             let approvedFrontline = 0;
             let approvedSupport = 0;
             let referral = 0;
@@ -646,9 +657,11 @@
                     referral++;
                 }
                 
-                if (d.chosen_role === 'Frontline' && currentStatus === 'Ready') {
+                const r = state.phase === 'pre' ? d.pre_raw_role : d.post_raw_role;
+                if (r && (r.includes('เจ้าหน้าที่') || r.includes('อาสาสมัคร')) && currentStatus === 'Ready') {
                     approvedFrontline++;
-                } else if (d.chosen_role === 'Support' && (currentStatus === 'Ready' || currentStatus === 'Conditional')) {
+                }
+                if (r && (r.includes('แนวกันไฟ') || r.includes('สนับสนุน') || r.includes('ส่งกำลัง')) && (currentStatus === 'Ready' || currentStatus === 'Conditional')) {
                     approvedSupport++;
                 }
             });
