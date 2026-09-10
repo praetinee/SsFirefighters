@@ -111,9 +111,8 @@
                     </div>
                     <div class="h-6 w-px bg-brand-500/30"></div>
                     <div class="flex items-center bg-brand-900 rounded-md p-0.5 border border-brand-500/30 text-sm">
-                        <button id="phasePre" class="px-3 py-1 rounded-sm text-brand-100 hover:text-white transition-colors" onclick="setPhase('pre')">ก่อนภารกิจ</button>
+                        <button id="phasePre" class="px-3 py-1 rounded-sm bg-brand-500/20 text-white transition-colors" onclick="setPhase('pre')">ก่อนภารกิจ</button>
                         <button id="phasePost" class="px-3 py-1 rounded-sm text-brand-100 hover:text-white transition-colors" onclick="setPhase('post')">หลังภารกิจ</button>
-                        <button id="phaseAll" class="px-3 py-1 rounded-sm bg-brand-500/20 text-white transition-colors" onclick="setPhase('all')">ภาพรวม</button>
                     </div>
                 </div>
                 <div class="text-sm text-brand-100 hidden lg:block" id="lastUpdatedText">
@@ -393,7 +392,7 @@
         const state = {
             view: 'commander', 
             year: 'all',
-            phase: 'all', 
+            phase: 'pre', 
             search: '',
             filterRole: 'all',
             filterStatus: 'all',
@@ -602,11 +601,9 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             if (state.phase === 'pre') {
                 validData = data.filter(d => d.pre_sys !== null || d.pre_verdict !== null);
                 phaseText = 'ก่อนภารกิจ';
-            } else if (state.phase === 'post') {
+            } else {
                 validData = data.filter(d => d.post_sys !== null || d.post_verdict !== null || (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ'));
                 phaseText = 'หลังภารกิจ';
-            } else {
-                phaseText = 'ภาพรวม';
             }
 
             const total = validData.length;
@@ -649,7 +646,26 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
 
             const ctxFitness = document.getElementById('chartFitness').getContext('2d');
             const counts = { Ready: 0, Conditional: 0, Referral: 0 };
-            data.forEach(d => counts[d.status]++);
+            
+            // ประมวลผลกราฟตาม phase ที่เลือก
+            if (state.phase === 'pre') {
+                const validPre = data.filter(d => d.pre_sys !== null || d.pre_verdict !== null);
+                validPre.forEach(d => {
+                    let actualVerdict = d.pre_verdict || 'รอประเมิน';
+                    if (d.status === 'Referral' || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('งด') || actualVerdict.includes('ส่งต่อ') || actualVerdict.includes('ผิดปกติ')) counts.Referral++;
+                    else if (d.status === 'Conditional' || actualVerdict.includes('เฝ้าระวัง') || actualVerdict.includes('ระวัง') || actualVerdict.includes('ควร')) counts.Conditional++;
+                    else counts.Ready++;
+                });
+            } else {
+                const validPost = data.filter(d => d.post_sys !== null || d.post_verdict !== null || (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ'));
+                validPost.forEach(d => {
+                    let actualVerdict = d.post_verdict || 'รอประเมิน';
+                    if (actualVerdict.includes('ผิดปกติ') || actualVerdict.includes('ไม่เหมาะสม') || actualVerdict.includes('ส่งต่อ')) counts.Referral++;
+                    else if (d.post_sys >= 140 || d.post_dia >= 90) counts.Conditional++;
+                    else counts.Ready++;
+                });
+            }
+
             state.charts.fitness = new Chart(ctxFitness, {
                 type: 'doughnut',
                 data: {
@@ -735,7 +751,7 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                 let badgeText = '';
 
                 // แยกการแสดงผลตามช่วงเวลา (ก่อนภารกิจ / หลังภารกิจ)
-                if (state.phase === 'post' || (state.phase === 'all' && item.post_verdict)) {
+                if (state.phase === 'post') {
                     let actualVerdict = item.post_verdict || 'รอประเมิน';
                     let actualDiag = (item.post_diag && item.post_diag.length > 0 && item.post_diag[0] !== 'ปกติ') ? ` (${item.post_diag.join(', ')})` : '';
                     
@@ -772,8 +788,6 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                 let sys = item.pre_sys, dia = item.pre_dia, pulse = item.pre_pulse;
                 let vitalsNote = "(Pre)";
                 if(state.phase === 'post') {
-                    sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)";
-                } else if (state.phase === 'all' && item.post_sys !== null) {
                     sys = item.post_sys; dia = item.post_dia; pulse = item.post_pulse; vitalsNote = "(Post)";
                 }
 
@@ -845,7 +859,7 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
 
         const setPhase = (phase) => {
             state.phase = phase;
-            ['All', 'Pre', 'Post'].forEach(p => {
+            ['Pre', 'Post'].forEach(p => {
                 const btn = document.getElementById(`phase${p}`);
                 const isSelected = phase === p.toLowerCase();
                 if(isSelected) {
@@ -1125,7 +1139,7 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             const content = document.getElementById('modalContent');
             
             let statusBanner = '';
-            let isModalPost = state.phase === 'post' || (state.phase === 'all' && user.post_verdict !== null);
+            let isModalPost = state.phase === 'post';
             
             if (isModalPost) {
                 let vStr = user.post_verdict || 'ไม่ระบุ';
