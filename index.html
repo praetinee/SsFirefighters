@@ -145,23 +145,21 @@
             </div>
             <div class="bg-white rounded-xl p-5 shadow-card border border-slate-100 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-slate-500 mb-1">ความพร้อมแนวหน้า <span class="block text-[11px] font-normal text-slate-400 mt-0.5">(เจ้าหน้าที่ดับไฟป่า, อาสาสมัครดับไฟป่า)</span></p>
+                    <p class="text-sm font-medium text-slate-500 mb-1">ปฏิบัติหน้าที่เป็นแนวหน้า <span class="block text-[11px] font-normal text-slate-400 mt-0.5">(เจ้าหน้าที่ดับไฟป่า, อาสาสมัครดับไฟป่า)</span></p>
                     <div class="flex items-baseline gap-2">
                         <h2 id="kpiFrontline" class="text-3xl font-bold font-inter text-status-ready">0</h2>
                         <span class="text-sm text-slate-500">นาย</span>
                     </div>
-                    <p id="kpiFrontlinePct" class="text-xs text-slate-500 mt-2">0% ของทั้งหมด</p>
                 </div>
                 <div class="bg-green-50 p-3 rounded-full border border-green-100"><i data-lucide="flame" class="w-6 h-6 text-status-ready"></i></div>
             </div>
             <div class="bg-white rounded-xl p-5 shadow-card border border-slate-100 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-slate-500 mb-1">กำลังพลฝ่ายสนับสนุน <span class="block text-[11px] font-normal text-slate-400 mt-0.5">(ร่วมทำแนวกันไฟป่า, หน่วยสนับสนุน)</span></p>
+                    <p class="text-sm font-medium text-slate-500 mb-1">ปฏิบัติหน้าที่เป็นฝ่ายสนับสนุน <span class="block text-[11px] font-normal text-slate-400 mt-0.5">(ร่วมทำแนวกันไฟป่า, หน่วยสนับสนุน)</span></p>
                     <div class="flex items-baseline gap-2">
                         <h2 id="kpiSupport" class="text-3xl font-bold font-inter text-status-conditional">0</h2>
                         <span class="text-sm text-slate-500">นาย</span>
                     </div>
-                    <p id="kpiSupportPct" class="text-xs text-slate-500 mt-2">0% ของทั้งหมด</p>
                 </div>
                 <div class="bg-amber-50 p-3 rounded-full border border-amber-100"><i data-lucide="truck" class="w-6 h-6 text-status-conditional"></i></div>
             </div>
@@ -663,12 +661,7 @@
             document.getElementById('kpiSupport').innerText = approvedSupport;
             document.getElementById('kpiAlert').innerText = referral;
 
-            // คำนวณเปอร์เซ็นต์จาก "จำนวนคนที่เลือก" ไม่ใช่คนทั้งหมด
-            const frontPct = chosenFrontline > 0 ? ((approvedFrontline / chosenFrontline) * 100).toFixed(1) : 0;
-            document.getElementById('kpiFrontlinePct').innerHTML = `เลือกลงแนวหน้า: ${chosenFrontline} นาย<br>แพทย์อนุมัติ: ${approvedFrontline} นาย (${frontPct}%)`;
-
-            const supportPct = chosenSupport > 0 ? ((approvedSupport / chosenSupport) * 100).toFixed(1) : 0;
-            document.getElementById('kpiSupportPct').innerHTML = `เลือกลงฝ่ายสนับสนุน: ${chosenSupport} นาย<br>แพทย์อนุมัติ: ${approvedSupport} นาย (${supportPct}%)`;
+            // เอาข้อความเลือกลงแนวหน้า/ฝ่ายสนับสนุน และแพทย์อนุมัติออกตามคำขอ
             
             // นับจำนวนคนที่มีโรคประจำตัว (แยกตามชีตก่อน/หลังภารกิจ)
             const condCount = validData.filter(d => {
