@@ -754,13 +754,9 @@
                 document.getElementById('chartDiagTitle').innerText = 'ความผิดปกติหลังจบภารกิจ (ทั้งหมด)';
                 document.getElementById('chartDiagSubtitle').innerText = 'ตรวจหลังปฏิบัติภารกิจ';
                 validDataForCharts.forEach(d => {
-                    // รวมเช็คทั้งอาการเจ็บป่วยหลังภารกิจ และโรคประจำตัวในชีตหลังภารกิจ
-                    let combinedTexts = [];
-                    if (d.post_cond && d.post_cond !== 'ไม่มี' && d.post_cond !== '-' && d.post_cond !== 'ไม่ระบุ') combinedTexts.push(d.post_cond);
-                    if (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ') combinedTexts.push(d.post_diag.join(','));
-                    
-                    if (combinedTexts.length > 0) {
-                        const conds = groupKeywords(combinedTexts.join(','));
+                    // นับเฉพาะความผิดปกติจากการวินิจฉัยหลังภารกิจเท่านั้น (ไม่เอาโรคประจำตัวมาปน)
+                    if (d.post_diag && d.post_diag.length > 0 && d.post_diag[0] !== 'ปกติ') {
+                        const conds = groupKeywords(d.post_diag.join(','));
                         conds.forEach(c => diagCounts[c] = (diagCounts[c] || 0) + 1);
                     }
                 });
