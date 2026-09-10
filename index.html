@@ -477,7 +477,14 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                         if (roleVal && roleVal.trim() !== '-' && roleVal.trim() !== '') {
                             const rStr = roleVal.toString().trim();
                             user.raw_role = rStr;
-                            user.chosen_role = (rStr.includes('สนับสนุน') || rStr.includes('ส่งกำลัง')) ? 'Support' : 'Frontline';
+                            // จำแนกตามตัวเลือกที่ระบุอย่างชัดเจน
+                            if (rStr.includes('เจ้าหน้าที่') || rStr.includes('อาสาสมัคร')) {
+                                user.chosen_role = 'Frontline';
+                            } else if (rStr.includes('แนวกันไฟ') || rStr.includes('สนับสนุน') || rStr.includes('ส่งกำลัง')) {
+                                user.chosen_role = 'Support';
+                            } else {
+                                user.chosen_role = 'None';
+                            }
                         }
                         
                         const sysVal = row['ความดันตัวบน'] ? parseInt(row['ความดันตัวบน']) : null;
@@ -603,26 +610,36 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
             }
 
             const total = validData.length;
-            const frontline = validData.filter(d => d.status === 'Ready').length;
-            const support = validData.filter(d => d.status === 'Conditional').length;
+            
+            // 1. นับจำนวนคนที่เลือกลงแต่ละภารกิจ
+            const chosenFrontline = validData.filter(d => d.chosen_role === 'Frontline').length;
+            const chosenSupport = validData.filter(d => d.chosen_role === 'Support').length;
+
+            // 2. นับจำนวนคนที่ "แพทย์อนุมัติตามภารกิจที่เลือก"
+            // แนวหน้าต้องได้สถานะ Ready เท่านั้น
+            const approvedFrontline = validData.filter(d => d.chosen_role === 'Frontline' && d.status === 'Ready').length;
+            // ฝ่ายสนับสนุน สามารถเป็นได้ทั้ง Ready และ Conditional (เฝ้าระวังแต่ยังทำงานเบาได้)
+            const approvedSupport = validData.filter(d => d.chosen_role === 'Support' && (d.status === 'Ready' || d.status === 'Conditional')).length;
+            
+            // ส่งต่อแพทย์ (งดภารกิจทุกประเภท)
             const referral = validData.filter(d => d.status === 'Referral').length;
 
             const yearText = state.year === 'all' ? 'ทุกปี' : `ปี ${state.year}`;
             const labelEl = document.getElementById('kpiTotalLabel');
             if (labelEl) labelEl.innerText = `กำลังพลที่ตรวจ (${yearText} ${phaseText})`;
 
+            // อัปเดตตัวเลขหลักให้ตรงกับจำนวนคนที่ผ่านเกณฑ์
             document.getElementById('kpiTotal').innerText = total;
-            document.getElementById('kpiFrontline').innerText = frontline;
-            document.getElementById('kpiSupport').innerText = support;
+            document.getElementById('kpiFrontline').innerText = approvedFrontline;
+            document.getElementById('kpiSupport').innerText = approvedSupport;
             document.getElementById('kpiAlert').innerText = referral;
 
-            const chosenFrontline = validData.filter(d => d.chosen_role === 'Frontline').length;
-            const frontTotalPct = total > 0 ? ((frontline / total) * 100).toFixed(1) : 0;
-            document.getElementById('kpiFrontlinePct').innerHTML = `เลือกลงแนวหน้า: ${chosenFrontline} นาย<br>แพทย์อนุมัติ: ${frontline} นาย (${frontTotalPct}% ของทั้งหมด)`;
+            // คำนวณเปอร์เซ็นต์จาก "จำนวนคนที่เลือก" ไม่ใช่คนทั้งหมด
+            const frontPct = chosenFrontline > 0 ? ((approvedFrontline / chosenFrontline) * 100).toFixed(1) : 0;
+            document.getElementById('kpiFrontlinePct').innerHTML = `เลือกลงแนวหน้า: ${chosenFrontline} นาย<br>แพทย์อนุมัติ: ${approvedFrontline} นาย (${frontPct}%)`;
 
-            const chosenSupport = validData.filter(d => d.chosen_role === 'Support').length;
-            const supportTotalPct = total > 0 ? ((support / total) * 100).toFixed(1) : 0;
-            document.getElementById('kpiSupportPct').innerHTML = `เลือกลงสนับสนุน: ${chosenSupport} นาย<br>แพทย์อนุมัติ: ${support} นาย (${supportTotalPct}% ของทั้งหมด)`;
+            const supportPct = chosenSupport > 0 ? ((approvedSupport / chosenSupport) * 100).toFixed(1) : 0;
+            document.getElementById('kpiSupportPct').innerHTML = `เลือกลงฝ่ายสนับสนุน: ${chosenSupport} นาย<br>แพทย์อนุมัติ: ${approvedSupport} นาย (${supportPct}%)`;
         };
         
         const initOrUpdateCharts = (data) => {
