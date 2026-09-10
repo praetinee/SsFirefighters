@@ -189,7 +189,7 @@
             </div>
             <div class="bg-white p-5 rounded-xl shadow-card border border-slate-100">
                 <h3 class="text-base font-semibold text-brand-900 mb-4 flex items-center gap-2">
-                    <i data-lucide="scatter-chart" class="w-5 h-5 text-brand-500"></i> ความเสี่ยง Heat Stroke (อายุ vs BMI)
+                    <i data-lucide="scatter-chart" class="w-5 h-5 text-brand-500"></i> อายุ vs BMI
                 </h3>
                 <div class="relative h-64 w-full"><canvas id="chartScatter"></canvas></div>
             </div>
@@ -541,7 +541,12 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
                     user.recommended_role = user.status === 'Referral' ? 'Medical' : (user.status === 'Conditional' ? 'Support' : 'Frontline');
                     user.mismatch = (user.chosen_role === 'Frontline' && user.recommended_role !== 'Frontline');
                     if (!user.pre_cond || user.pre_cond === '-') user.pre_cond = 'ไม่มี';
-                    if (user.post_diag.length === 0) user.post_diag = ['ปกติ'];
+                    
+                    // หากมีการตรวจหลังภารกิจ (มีความดันหรือคำวินิจฉัย) แต่ไม่ได้ระบุอาการ ให้แสดงว่า 'ปกติ' 
+                    // แต่ถ้าไม่ได้ตรวจเลย ให้คงสถานะว่างไว้
+                    if (user.post_diag.length === 0 && (user.post_sys !== null || user.post_verdict !== null)) {
+                        user.post_diag = ['ปกติ'];
+                    }
                     
                     return user;
                 });
@@ -1145,7 +1150,7 @@ if (row['การสูบบุหรี่'] && row['การสูบบุ
 
             const postDiagHtml = (user.post_diag && user.post_diag.length > 0) 
                 ? user.post_diag.map(d => `<span class="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded">${d}</span>`).join('')
-                : '<span class="text-xs text-slate-400">ไม่มีข้อมูล</span>';
+                : '<span class="text-xs text-slate-400">-</span>';
 
             content.innerHTML = `
                 ${statusBanner}
